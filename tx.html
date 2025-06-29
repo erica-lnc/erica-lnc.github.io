@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推箱子游戏</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .game-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border: 1px solid #e5e7eb;
+            position: relative;
+        }
+        @media (max-width: 640px) {
+            .game-cell {
+                width: 32px;
+                height: 32px;
+                font-size: 20px;
+            }
+        }
+        .dark .game-cell {
+            border-color: #374151;
+        }
+        .wall { background-color: #8b5cf6; }
+        .floor { background-color: #f3f4f6; }
+        .target { background-color: #fef3c7; }
+        .dark .floor { background-color: #1f2937; }
+        .dark .target { background-color: #451a03; }
+        .completed-box { background-color: #10b981 !important; }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border-radius: 12px;
+            background: #5D5CDE;
+            color: white;
+            border: none;
+            cursor: pointer;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .control-btn:active {
+            transform: scale(0.95);
+            background: #4c46d4;
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold mb-2">推箱子游戏</h1>
+            <p class="text-gray-600 dark:text-gray-400">50关卡智挑战，将所有箱子推到目标位置！</p>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="hidden">
+            <!-- Game Info -->
+            <div class="flex justify-between items-center mb-4">
+                <button id="backBtn" class="px-4 py-2 bg-gray-500 text-white rounded-lg">← 返回</button>
+                <div class="text-center">
+                    <div class="text-lg font-semibold">关卡 <span id="currentLevel">1</span></div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">步数: <span id="moveCount">0</span></div>
+                </div>
+                <button id="resetBtn" class="px-4 py-2 bg-primary text-white rounded-lg">重置</button>
+            </div>
+
+            <!-- Game Board -->
+            <div class="flex justify-center mb-6">
+                <div id="gameBoard" class="inline-block bg-gray-200 dark:bg-gray-700 p-2 rounded-lg"></div>
+            </div>
+
+            <!-- Touch Controls -->
+            <div class="flex justify-center">
+                <div class="grid grid-cols-3 gap-2 w-48">
+                    <div></div>
+                    <button class="control-btn" id="upBtn">↑</button>
+                    <div></div>
+                    <button class="control-btn" id="leftBtn">←</button>
+                    <button class="control-btn" id="downBtn">↓</button>
+                    <button class="control-btn" id="rightBtn">→</button>
+                </div>
+            </div>
+
+            <!-- Game Instructions -->
+            <div class="mt-8 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <h3 class="font-semibold mb-2">游戏说明</h3>
+                <div class="text-sm space-y-1">
+                    <div><strong>目标:</strong> 将所有箱子推到目标位置</div>
+                    <div><strong>规则:</strong> 只能推动箱子，不能拉动</div>
+                    <div><strong>控制:</strong> 方向键或WASD移动，或使用触摸按钮</div>
+                </div>
+                <div class="mt-3 flex items-center gap-4 text-sm">
+                    <span>🧍 玩家</span>
+                    <span>📦 箱子</span>
+                    <span>🎯 目标位置</span>
+                    <span>🧱 墙壁</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Selection Screen -->
+        <div id="levelSelect">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-semibold mb-2">选择关卡</h2>
+                <div class="text-lg">已完成: <span id="completedCount" class="text-green-500 font-semibold">0</span> / 50</div>
+            </div>
+
+            <!-- Level Grid -->
+            <div class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 mb-8" id="levelGrid">
+                <!-- Levels will be generated here -->
+            </div>
+
+            <!-- Game Instructions -->
+            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <h3 class="font-semibold mb-2">游戏说明</h3>
+                <div class="text-sm space-y-1">
+                    <div><strong>目标:</strong> 将所有箱子推到目标位置</div>
+                    <div><strong>规则:</strong> 只能推动箱子，不能拉动</div>
+                    <div><strong>控制:</strong> 方向键或WASD移动</div>
+                </div>
+                <div class="mt-3 flex items-center gap-4 text-sm">
+                    <span>🧍 玩家</span>
+                    <span>📦 箱子</span>
+                    <span>🎯 目标位置</span>
+                    <span>🧱 墙壁</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode setup
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Game state
+        let currentLevel = 1;
+        let playerPos = { x: 0, y: 0 };
+        let boxes = [];
+        let targets = [];
+        let walls = [];
+        let moveCount = 0;
+        let completedLevels = new Set();
+
+        // Level data (simplified 8x8 levels)
+        const levels = [
+            // Level 1
+            {
+                width: 8, height: 6,
+                player: { x: 1, y: 1 },
+                boxes: [{ x: 3, y: 2 }],
+                targets: [{ x: 5, y: 2 }],
+                walls: [
+                    { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 }, { x: 5, y: 0 }, { x: 6, y: 0 }, { x: 7, y: 0 },
+                    { x: 0, y: 1 }, { x: 7, y: 1 },
+                    { x: 0, y: 2 }, { x: 7, y: 2 },
+                    { x: 0, y: 3 }, { x: 7, y: 3 },
+                    { x: 0, y: 4 }, { x: 7, y: 4 },
+                    { x: 0, y: 5 }, { x: 1, y: 5 }, { x: 2, y: 5 }, { x: 3, y: 5 }, { x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }, { x: 7, y: 5 }
+                ]
+            },
+            // Level 2
+            {
+                width: 8, height: 6,
+                player: { x: 1, y: 1 },
+                boxes: [{ x: 2, y: 2 }, { x: 4, y: 2 }],
+                targets: [{ x: 5, y: 1 }, { x: 5, y: 3 }],
+                walls: [
+                    { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 }, { x: 5, y: 0 }, { x: 6, y: 0 }, { x: 7, y: 0 },
+                    { x: 0, y: 1 }, { x: 7, y: 1 },
+                    { x: 0, y: 2 }, { x: 7, y: 2 },
+                    { x: 0, y: 3 }, { x: 7, y: 3 },
+                    { x: 0, y: 4 }, { x: 7, y: 4 },
+                    { x: 0, y: 5 }, { x: 1, y: 5 }, { x: 2, y: 5 }, { x: 3, y: 5 }, { x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }, { x: 7, y: 5 }
+                ]
+            }
+        ];
+
+        // Generate more levels programmatically
+        function generateLevel(levelNum) {
+            if (levelNum <= 2) return levels[levelNum - 1];
+            
+            const width = 8 + Math.floor(levelNum / 10);
+            const height = 6 + Math.floor(levelNum / 15);
+            const numBoxes = Math.min(1 + Math.floor(levelNum / 5), 8);
+            
+            // Create walls around perimeter
+            const walls = [];
+            for (let x = 0; x < width; x++) {
+                walls.push({ x, y: 0 });
+                walls.push({ x, y: height - 1 });
+            }
+            for (let y = 1; y < height - 1; y++) {
+                walls.push({ x: 0, y });
+                walls.push({ x: width - 1, y });
+            }
+            
+            // Add some internal walls
+            const numInternalWalls = Math.floor(levelNum / 8);
+            for (let i = 0; i < numInternalWalls; i++) {
+                const x = 2 + Math.floor(Math.random() * (width - 4));
+                const y = 2 + Math.floor(Math.random() * (height - 4));
+                if (!walls.some(w => w.x === x && w.y === y)) {
+                    walls.push({ x, y });
+                }
+            }
+            
+            // Place player
+            const player = { x: 1, y: 1 };
+            
+            // Place boxes and targets
+            const boxes = [];
+            const targets = [];
+            for (let i = 0; i < numBoxes; i++) {
+                let boxX, boxY, targetX, targetY;
+                do {
+                    boxX = 1 + Math.floor(Math.random() * (width - 2));
+                    boxY = 1 + Math.floor(Math.random() * (height - 2));
+                } while (
+                    walls.some(w => w.x === boxX && w.y === boxY) ||
+                    boxes.some(b => b.x === boxX && b.y === boxY) ||
+                    (boxX === player.x && boxY === player.y)
+                );
+                
+                do {
+                    targetX = 1 + Math.floor(Math.random() * (width - 2));
+                    targetY = 1 + Math.floor(Math.random() * (height - 2));
+                } while (
+                    walls.some(w => w.x === targetX && w.y === targetY) ||
+                    targets.some(t => t.x === targetX && t.y === targetY) ||
+                    (targetX === player.x && targetY === player.y) ||
+                    (targetX === boxX && targetY === boxY)
+                );
+                
+                boxes.push({ x: boxX, y: boxY });
+                targets.push({ x: targetX, y: targetY });
+            }
+            
+            return { width, height, player, boxes, targets, walls };
+        }
+
+        // DOM elements
+        const gameScreen = document.getElementById('gameScreen');
+        const levelSelect = document.getElementById('levelSelect');
+        const gameBoard = document.getElementById('gameBoard');
+        const currentLevelEl = document.getElementById('currentLevel');
+        const moveCountEl = document.getElementById('moveCount');
+        const completedCountEl = document.getElementById('completedCount');
+        const levelGrid = document.getElementById('levelGrid');
+
+        // Initialize level selection
+        function initLevelSelect() {
+            levelGrid.innerHTML = '';
+            for (let i = 1; i <= 50; i++) {
+                const btn = document.createElement('button');
+                btn.className = `w-12 h-12 rounded-lg font-semibold text-sm transition-colors ${
+                    completedLevels.has(i) 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`;
+                btn.textContent = i;
+                btn.onclick = () => startLevel(i);
+                levelGrid.appendChild(btn);
+            }
+            completedCountEl.textContent = completedLevels.size;
+        }
+
+        // Start a level
+        function startLevel(level) {
+            currentLevel = level;
+            const levelData = generateLevel(level);
+            
+            playerPos = { ...levelData.player };
+            boxes = levelData.boxes.map(b => ({ ...b }));
+            targets = levelData.targets.map(t => ({ ...t }));
+            walls = levelData.walls.map(w => ({ ...w }));
+            moveCount = 0;
+            
+            currentLevelEl.textContent = level;
+            moveCountEl.textContent = moveCount;
+            
+            levelSelect.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            
+            renderGame(levelData.width, levelData.height);
+        }
+
+        // Render the game board
+        function renderGame(width, height) {
+            gameBoard.innerHTML = '';
+            gameBoard.style.display = 'grid';
+            gameBoard.style.gridTemplateColumns = `repeat(${width}, 40px)`;
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'game-cell';
+                    
+                    const isWall = walls.some(w => w.x === x && w.y === y);
+                    const isTarget = targets.some(t => t.x === x && t.y === y);
+                    const box = boxes.find(b => b.x === x && b.y === y);
+                    const isPlayer = playerPos.x === x && playerPos.y === y;
+                    
+                    if (isWall) {
+                        cell.className += ' wall';
+                        cell.textContent = '🧱';
+                    } else if (isTarget) {
+                        cell.className += ' target';
+                        cell.textContent = '🎯';
+                    } else {
+                        cell.className += ' floor';
+                    }
+                    
+                    if (box) {
+                        const isCompleted = targets.some(t => t.x === x && t.y === y);
+                        if (isCompleted) {
+                            cell.classList.add('completed-box');
+                        }
+                        cell.textContent = '📦';
+                    }
+                    
+                    if (isPlayer) {
+                        cell.textContent = '🧍';
+                    }
+                    
+                    gameBoard.appendChild(cell);
+                }
+            }
+        }
+
+        // Move player
+        function movePlayer(dx, dy) {
+            const newX = playerPos.x + dx;
+            const newY = playerPos.y + dy;
+            
+            // Check if new position is a wall
+            if (walls.some(w => w.x === newX && w.y === newY)) return;
+            
+            // Check if there's a box at new position
+            const boxIndex = boxes.findIndex(b => b.x === newX && b.y === newY);
+            if (boxIndex !== -1) {
+                const boxNewX = newX + dx;
+                const boxNewY = newY + dy;
+                
+                // Check if box can be pushed
+                if (walls.some(w => w.x === boxNewX && w.y === boxNewY) ||
+                    boxes.some(b => b.x === boxNewX && b.y === boxNewY)) {
+                    return;
+                }
+                
+                // Move box
+                boxes[boxIndex].x = boxNewX;
+                boxes[boxIndex].y = boxNewY;
+            }
+            
+            // Move player
+            playerPos.x = newX;
+            playerPos.y = newY;
+            moveCount++;
+            moveCountEl.textContent = moveCount;
+            
+            const levelData = generateLevel(currentLevel);
+            renderGame(levelData.width, levelData.height);
+            
+            // Check win condition
+            checkWin();
+        }
+
+        // Check if level is completed
+        function checkWin() {
+            const allBoxesOnTargets = boxes.every(box => 
+                targets.some(target => target.x === box.x && target.y === box.y)
+            );
+            
+            if (allBoxesOnTargets) {
+                completedLevels.add(currentLevel);
+                setTimeout(() => {
+                    alert(`恭喜！关卡 ${currentLevel} 完成！\n步数: ${moveCount}`);
+                    if (currentLevel < 50) {
+                        startLevel(currentLevel + 1);
+                    } else {
+                        backToLevelSelect();
+                    }
+                }, 300);
+            }
+        }
+
+        // Back to level select
+        function backToLevelSelect() {
+            gameScreen.classList.add('hidden');
+            levelSelect.classList.remove('hidden');
+            initLevelSelect();
+        }
+
+        // Reset level
+        function resetLevel() {
+            startLevel(currentLevel);
+        }
+
+        // Event listeners
+        document.getElementById('backBtn').onclick = backToLevelSelect;
+        document.getElementById('resetBtn').onclick = resetLevel;
+
+        // Touch controls
+        document.getElementById('upBtn').onclick = () => movePlayer(0, -1);
+        document.getElementById('downBtn').onclick = () => movePlayer(0, 1);
+        document.getElementById('leftBtn').onclick = () => movePlayer(-1, 0);
+        document.getElementById('rightBtn').onclick = () => movePlayer(1, 0);
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (gameScreen.classList.contains('hidden')) return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    e.preventDefault();
+                    movePlayer(0, -1);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    e.preventDefault();
+                    movePlayer(0, 1);
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    e.preventDefault();
+                    movePlayer(-1, 0);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    e.preventDefault();
+                    movePlayer(1, 0);
+                    break;
+            }
+        });
+
+        // Initialize the game
+        initLevelSelect();
+    </script>
+</body>
+</html>
