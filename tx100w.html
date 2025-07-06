@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推箱子游戏</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .game-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border: 1px solid #e5e7eb;
+        }
+        @media (max-width: 640px) {
+            .game-cell {
+                width: 32px;
+                height: 32px;
+                font-size: 20px;
+            }
+        }
+        .dark .game-cell {
+            border-color: #374151;
+        }
+        .wall { background-color: #8b5cf6; }
+        .floor { background-color: #f3f4f6; }
+        .target { background-color: #fef3c7; }
+        .dark .floor { background-color: #1f2937; }
+        .dark .target { background-color: #451a03; }
+        .completed-box { background-color: #10b981 !important; }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border-radius: 12px;
+            background: #5D5CDE;
+            color: white;
+            border: none;
+            cursor: pointer;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .control-btn:active {
+            transform: scale(0.95);
+            background: #4c46d4;
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold mb-2">推箱子游戏</h1>
+            <p class="text-gray-600 dark:text-gray-400">100万关卡终极挑战，将所有箱子推到目标位置！</p>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="hidden">
+            <!-- Game Info -->
+            <div class="flex justify-between items-center mb-4">
+                <button id="backBtn" class="px-4 py-2 bg-gray-500 text-white rounded-lg">← 返回</button>
+                <div class="text-center">
+                    <div class="text-lg font-semibold">关卡 <span id="currentLevel">1</span></div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">步数: <span id="moveCount">0</span></div>
+                </div>
+                <button id="resetBtn" class="px-4 py-2 bg-primary text-white rounded-lg">重置</button>
+            </div>
+
+            <!-- Game Board -->
+            <div class="flex justify-center mb-6">
+                <div id="gameBoard" class="inline-block bg-gray-200 dark:bg-gray-700 p-2 rounded-lg"></div>
+            </div>
+
+            <!-- Touch Controls -->
+            <div class="flex justify-center">
+                <div class="grid grid-cols-3 gap-2 w-48">
+                    <div></div>
+                    <button class="control-btn" id="upBtn">↑</button>
+                    <div></div>
+                    <button class="control-btn" id="leftBtn">←</button>
+                    <button class="control-btn" id="downBtn">↓</button>
+                    <button class="control-btn" id="rightBtn">→</button>
+                </div>
+            </div>
+
+            <!-- Game Instructions -->
+            <div class="mt-8 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <h3 class="font-semibold mb-2">游戏说明</h3>
+                <div class="text-sm space-y-1">
+                    <div><strong>目标:</strong> 将所有箱子推到目标位置</div>
+                    <div><strong>规则:</strong> 只能推动箱子，不能拉动</div>
+                    <div><strong>控制:</strong> 方向键或WASD移动，或使用触摸按钮</div>
+                </div>
+                <div class="mt-3 flex items-center gap-4 text-sm">
+                    <span>🧍 玩家</span>
+                    <span>📦 箱子</span>
+                    <span>🎯 目标位置</span>
+                    <span>🧱 墙壁</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Selection Screen -->
+        <div id="levelSelect">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-semibold mb-2">选择关卡</h2>
+                <div class="text-lg">已完成: <span id="completedCount" class="text-green-500 font-semibold">0</span> / 1,000,000</div>
+                
+                <!-- Level Range Selector -->
+                <div class="mt-4 flex justify-center items-center gap-4 flex-wrap">
+                    <button id="prevRangeBtn" class="px-3 py-1 bg-gray-500 text-white rounded">◀</button>
+                    <span class="text-lg font-semibold">关卡 <span id="rangeStart">1</span> - <span id="rangeEnd">50</span></span>
+                    <button id="nextRangeBtn" class="px-3 py-1 bg-gray-500 text-white rounded">▶</button>
+                </div>
+                
+                <!-- Quick Jump -->
+                <div class="mt-3 flex justify-center items-center gap-2 text-sm flex-wrap">
+                    <label>快速跳转到:</label>
+                    <input type="number" id="jumpInput" min="1" max="1000000" class="w-24 px-2 py-1 border rounded text-base" placeholder="关卡">
+                    <button id="jumpBtn" class="px-3 py-1 bg-primary text-white rounded">跳转</button>
+                </div>
+            </div>
+
+            <!-- Level Grid -->
+            <div class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 mb-8" id="levelGrid">
+                <!-- Levels will be generated here -->
+            </div>
+
+            <!-- Game Instructions -->
+            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <h3 class="font-semibold mb-2">游戏说明</h3>
+                <div class="text-sm space-y-1">
+                    <div><strong>目标:</strong> 将所有箱子推到目标位置</div>
+                    <div><strong>规则:</strong> 只能推动箱子，不能拉动</div>
+                    <div><strong>控制:</strong> 方向键或WASD移动</div>
+                </div>
+                <div class="mt-3 flex items-center gap-4 text-sm">
+                    <span>🧍 玩家</span>
+                    <span>📦 箱子</span>
+                    <span>🎯 目标位置</span>
+                    <span>🧱 墙壁</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode setup
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Game state
+        let currentLevel = 1;
+        let playerPos = { x: 0, y: 0 };
+        let boxes = [];
+        let targets = [];
+        let walls = [];
+        let moveCount = 0;
+        let completedLevels = new Set();
+        let currentRange = 0;
+
+        // DOM elements
+        const gameScreen = document.getElementById('gameScreen');
+        const levelSelect = document.getElementById('levelSelect');
+        const gameBoard = document.getElementById('gameBoard');
+        const currentLevelEl = document.getElementById('currentLevel');
+        const moveCountEl = document.getElementById('moveCount');
+        const completedCountEl = document.getElementById('completedCount');
+        const levelGrid = document.getElementById('levelGrid');
+
+        // Simple random number generator with seed
+        function seededRandom(seed) {
+            let x = Math.sin(seed) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // Generate level data with custom seed
+        function generateLevelWithSeed(levelNum, customSeed = null) {
+            const seed = customSeed || levelNum * 12345;
+            let randIndex = 0;
+            function rand() {
+                return seededRandom(seed + randIndex++);
+            }
+
+            // Basic level structure
+            const baseWidth = 8;
+            const baseHeight = 6;
+            const width = baseWidth + Math.floor(levelNum / 200);
+            const height = baseHeight + Math.floor(levelNum / 300);
+            const numBoxes = Math.min(1 + Math.floor(levelNum / 50), 10);
+            
+            // Create perimeter walls
+            const walls = [];
+            for (let x = 0; x < width; x++) {
+                walls.push({ x, y: 0 });
+                walls.push({ x, y: height - 1 });
+            }
+            for (let y = 1; y < height - 1; y++) {
+                walls.push({ x: 0, y });
+                walls.push({ x: width - 1, y });
+            }
+            
+            // Add some internal walls
+            const numInternalWalls = Math.floor(levelNum / 100);
+            for (let i = 0; i < numInternalWalls; i++) {
+                const x = 2 + Math.floor(rand() * (width - 4));
+                const y = 2 + Math.floor(rand() * (height - 4));
+                if (!walls.some(w => w.x === x && w.y === y)) {
+                    walls.push({ x, y });
+                }
+            }
+            
+            // Player position
+            const player = { x: 1, y: 1 };
+            
+            // Place boxes and targets
+            const boxes = [];
+            const targets = [];
+            
+            for (let i = 0; i < numBoxes; i++) {
+                let boxX, boxY, targetX, targetY;
+                
+                // Find valid box position
+                do {
+                    boxX = 1 + Math.floor(rand() * (width - 2));
+                    boxY = 1 + Math.floor(rand() * (height - 2));
+                } while (
+                    walls.some(w => w.x === boxX && w.y === boxY) ||
+                    boxes.some(b => b.x === boxX && b.y === boxY) ||
+                    (boxX === player.x && boxY === player.y)
+                );
+                
+                // Find valid target position
+                do {
+                    targetX = 1 + Math.floor(rand() * (width - 2));
+                    targetY = 1 + Math.floor(rand() * (height - 2));
+                } while (
+                    walls.some(w => w.x === targetX && w.y === targetY) ||
+                    targets.some(t => t.x === targetX && t.y === targetY) ||
+                    (targetX === player.x && targetY === player.y)
+                );
+                
+                boxes.push({ x: boxX, y: boxY });
+                targets.push({ x: targetX, y: targetY });
+            }
+            
+            return { width, height, player, boxes, targets, walls };
+        }
+
+        // Generate level data (wrapper function)
+        function generateLevel(levelNum) {
+            return generateLevelWithSeed(levelNum);
+        }
+
+        // Start a level
+        function startLevel(level) {
+            currentLevel = level;
+            const levelData = generateLevel(level);
+            
+            playerPos = { ...levelData.player };
+            boxes = levelData.boxes.map(b => ({ ...b }));
+            targets = levelData.targets.map(t => ({ ...t }));
+            walls = levelData.walls.map(w => ({ ...w }));
+            moveCount = 0;
+            
+            currentLevelEl.textContent = level;
+            moveCountEl.textContent = moveCount;
+            
+            levelSelect.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            
+            renderGame(levelData.width, levelData.height);
+        }
+
+        // Initialize level selection
+        function initLevelSelect() {
+            const startLevelNum = currentRange * 50 + 1;
+            const endLevel = Math.min((currentRange + 1) * 50, 1000000);
+            
+            document.getElementById('rangeStart').textContent = startLevelNum.toLocaleString();
+            document.getElementById('rangeEnd').textContent = endLevel.toLocaleString();
+            
+            levelGrid.innerHTML = '';
+            for (let i = startLevelNum; i <= endLevel; i++) {
+                const btn = document.createElement('button');
+                btn.className = `w-12 h-12 rounded-lg font-semibold text-sm transition-colors ${
+                    completedLevels.has(i) 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`;
+                btn.textContent = i > 999 ? `${Math.floor(i/1000)}k` : i;
+                btn.onclick = () => startLevel(i);
+                levelGrid.appendChild(btn);
+            }
+            
+            completedCountEl.textContent = completedLevels.size.toLocaleString();
+            
+            // Update navigation buttons - 1,000,000 / 50 = 20,000 pages
+            const prevBtn = document.getElementById('prevRangeBtn');
+            const nextBtn = document.getElementById('nextRangeBtn');
+            const maxRange = Math.floor(999999 / 50); // 19999
+            prevBtn.disabled = currentRange === 0;
+            nextBtn.disabled = currentRange >= maxRange;
+            prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+            nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+        }
+
+        // Range navigation
+        function changeRange(direction) {
+            const maxRange = Math.floor(999999 / 50); // 19999
+            if (direction === -1 && currentRange > 0) {
+                currentRange--;
+            } else if (direction === 1 && currentRange < maxRange) {
+                currentRange++;
+            }
+            initLevelSelect();
+        }
+
+        // Jump to specific level
+        function jumpToLevel() {
+            const input = document.getElementById('jumpInput');
+            const level = parseInt(input.value);
+            if (level >= 1 && level <= 1000000) {
+                currentRange = Math.floor((level - 1) / 50);
+                initLevelSelect();
+                input.value = '';
+            }
+        }
+
+        // Render the game board
+        function renderGame(width, height) {
+            gameBoard.innerHTML = '';
+            gameBoard.style.display = 'grid';
+            gameBoard.style.gridTemplateColumns = `repeat(${width}, 40px)`;
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'game-cell';
+                    
+                    const isWall = walls.some(w => w.x === x && w.y === y);
+                    const isTarget = targets.some(t => t.x === x && t.y === y);
+                    const box = boxes.find(b => b.x === x && b.y === y);
+                    const isPlayer = playerPos.x === x && playerPos.y === y;
+                    
+                    if (isWall) {
+                        cell.className += ' wall';
+                        cell.textContent = '🧱';
+                    } else if (isTarget) {
+                        cell.className += ' target';
+                        cell.textContent = '🎯';
+                    } else {
+                        cell.className += ' floor';
+                    }
+                    
+                    if (box) {
+                        const isCompleted = targets.some(t => t.x === x && t.y === y);
+                        if (isCompleted) {
+                            cell.classList.add('completed-box');
+                        }
+                        cell.textContent = '📦';
+                    }
+                    
+                    if (isPlayer) {
+                        cell.textContent = '🧍';
+                    }
+                    
+                    gameBoard.appendChild(cell);
+                }
+            }
+        }
+
+        // Move player
+        function movePlayer(dx, dy) {
+            const newX = playerPos.x + dx;
+            const newY = playerPos.y + dy;
+            
+            // Check if new position is a wall
+            if (walls.some(w => w.x === newX && w.y === newY)) return;
+            
+            // Check if there's a box at new position
+            const boxIndex = boxes.findIndex(b => b.x === newX && b.y === newY);
+            if (boxIndex !== -1) {
+                const boxNewX = newX + dx;
+                const boxNewY = newY + dy;
+                
+                // Check if box can be pushed
+                if (walls.some(w => w.x === boxNewX && w.y === boxNewY) ||
+                    boxes.some(b => b.x === boxNewX && b.y === boxNewY)) {
+                    return;
+                }
+                
+                // Move box
+                boxes[boxIndex].x = boxNewX;
+                boxes[boxIndex].y = boxNewY;
+            }
+            
+            // Move player
+            playerPos.x = newX;
+            playerPos.y = newY;
+            moveCount++;
+            moveCountEl.textContent = moveCount;
+            
+            const levelData = generateLevel(currentLevel);
+            renderGame(levelData.width, levelData.height);
+            
+            // Check win condition
+            checkWin();
+        }
+
+        // Check if level is completed
+        function checkWin() {
+            const allBoxesOnTargets = boxes.every(box => 
+                targets.some(target => target.x === box.x && target.y === box.y)
+            );
+            
+            if (allBoxesOnTargets) {
+                completedLevels.add(currentLevel);
+                setTimeout(() => {
+                    alert(`恭喜！关卡 ${currentLevel.toLocaleString()} 完成！\n步数: ${moveCount}`);
+                    if (currentLevel < 1000000) {
+                        startLevel(currentLevel + 1);
+                    } else {
+                        alert('🎉🎉🎉 史诗级成就解锁！🎉🎉🎉\n\n恭喜您完成了所有100万关！\n您是史上最强的推箱子大师！\n这是人类推箱子史上的壮举！');
+                        backToLevelSelect();
+                    }
+                }, 300);
+            }
+        }
+
+        // Back to level select
+        function backToLevelSelect() {
+            gameScreen.classList.add('hidden');
+            levelSelect.classList.remove('hidden');
+            initLevelSelect();
+        }
+
+        // Reset level with new layout
+        function resetLevel() {
+            // Generate a new variation of the current level
+            const newSeed = Date.now() + Math.random() * 1000;
+            const levelData = generateLevelWithSeed(currentLevel, newSeed);
+            
+            playerPos = { ...levelData.player };
+            boxes = levelData.boxes.map(b => ({ ...b }));
+            targets = levelData.targets.map(t => ({ ...t }));
+            walls = levelData.walls.map(w => ({ ...w }));
+            moveCount = 0;
+            
+            moveCountEl.textContent = moveCount;
+            renderGame(levelData.width, levelData.height);
+        }
+
+        // Event listeners
+        document.getElementById('backBtn').addEventListener('click', backToLevelSelect);
+        document.getElementById('resetBtn').addEventListener('click', resetLevel);
+        document.getElementById('prevRangeBtn').addEventListener('click', () => changeRange(-1));
+        document.getElementById('nextRangeBtn').addEventListener('click', () => changeRange(1));
+        document.getElementById('jumpBtn').addEventListener('click', jumpToLevel);
+        document.getElementById('jumpInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') jumpToLevel();
+        });
+
+        // Touch controls
+        document.getElementById('upBtn').addEventListener('click', () => movePlayer(0, -1));
+        document.getElementById('downBtn').addEventListener('click', () => movePlayer(0, 1));
+        document.getElementById('leftBtn').addEventListener('click', () => movePlayer(-1, 0));
+        document.getElementById('rightBtn').addEventListener('click', () => movePlayer(1, 0));
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (gameScreen.classList.contains('hidden')) return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    e.preventDefault();
+                    movePlayer(0, -1);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    e.preventDefault();
+                    movePlayer(0, 1);
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    e.preventDefault();
+                    movePlayer(-1, 0);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    e.preventDefault();
+                    movePlayer(1, 0);
+                    break;
+            }
+        });
+
+        // Initialize the game
+        initLevelSelect();
+    </script>
+</body>
+</html>
