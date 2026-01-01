@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北美号码归属地查询（美/加精准区分）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 20px;
+        }
+        .input-box {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #34495e;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5eb;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+        }
+        input:focus {
+            border-color: #3498db;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        .success {
+            background-color: #e8f5e9;
+            border: 1px solid #2ecc71;
+            display: block;
+        }
+        .error {
+            background-color: #ffebee;
+            border: 1px solid #e74c3c;
+            display: block;
+        }
+        .result p {
+            color: #2c3e50;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        .result p span {
+            font-weight: 600;
+            color: #2980b9;
+        }
+        .tip {
+            margin-top: 15px;
+            font-size: 13px;
+            color: #7f8c8d;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>北美(+1)号码归属地查询（美/加精准区分）</h1>
+        <div class="input-box">
+            <label for="phoneNum">输入北美10位号码（格式：区号+本地号，例：4161234567）</label>
+            <input type="text" id="phoneNum" placeholder="请输入10位数字，无需+1和分隔符" maxlength="10">
+        </div>
+        <button onclick="checkLocation()">查询归属地</button>
+        <div class="result" id="result"></div>
+        <p class="tip">提示：仅支持美加主流常用区号，精准到美国州/加拿大省+核心城市</p>
+    </div>
+
+    <script>
+        // 美加核心区号数据库，覆盖主流城市，精准对应州/省+城市（可自行补充扩展）
+        const naAreaCodes = {
+            // 加拿大区号：省 + 核心城市
+            "204": {country: "加拿大", region: "曼尼托巴省", city: "温尼伯、布兰登"},
+            "226": {country: "加拿大", region: "安大略省", city: "伦敦、滑铁卢"},
+            "236": {country: "加拿大", region: "不列颠哥伦比亚省", city: "温哥华、维多利亚"},
+            "249": {country: "加拿大", region: "安大略省", city: "萨德伯里、蒂明斯"},
+            "250": {country: "加拿大", region: "不列颠哥伦比亚省", city: "维多利亚、坎卢普斯"},
+            "306": {country: "加拿大", region: "萨斯喀彻温省", city: "里贾纳、萨斯卡通"},
+            "343": {country: "加拿大", region: "安大略省", city: "渥太华、金斯顿"},
+            "365": {country: "加拿大", region: "安大略省", city: "多伦多、哈密尔顿"},
+            "403": {country: "加拿大", region: "阿尔伯塔省", city: "卡尔加里、班夫"},
+            "416": {country: "加拿大", region: "安大略省", city: "多伦多市区"},
+            "431": {country: "加拿大", region: "曼尼托巴省", city: "温尼伯周边"},
+            "437": {country: "加拿大", region: "安大略省", city: "多伦多郊区"},
+            "438": {country: "加拿大", region: "魁北克省", city: "蒙特利尔郊区"},
+            "450": {country: "加拿大", region: "魁北克省", city: "拉瓦尔、朗基尔"},
+            "506": {country: "加拿大", region: "新不伦瑞克省", city: "弗雷德里克顿、圣约翰"},
+            "514": {country: "加拿大", region: "魁北克省", city: "蒙特利尔市区"},
+            "519": {country: "加拿大", region: "安大略省", city: "伦敦、温莎"},
+            "579": {country: "加拿大", region: "魁北克省", city: "蒙特利尔周边"},
+            "581": {country: "加拿大", region: "魁北克省", city: "魁北克市、舍布鲁克"},
+            "587": {country: "加拿大", region: "阿尔伯塔省", city: "埃德蒙顿、卡尔加里"},
+            "604": {country: "加拿大", region: "不列颠哥伦比亚省", city: "温哥华市区"},
+            "613": {country: "加拿大", region: "安大略省", city: "渥太华市区、金斯顿"},
+            "639": {country: "加拿大", region: "萨斯喀彻温省", city: "萨斯卡通、里贾纳"},
+            "647": {country: "加拿大", region: "安大略省", city: "多伦多市区及郊区"},
+            "705": {country: "加拿大", region: "安大略省", city: "巴里、北湾"},
+            "709": {country: "加拿大", region: "纽芬兰与拉布拉多省", city: "圣约翰斯"},
+            "778": {country: "加拿大", region: "不列颠哥伦比亚省", city: "温哥华、素里"},
+            "780": {country: "加拿大", region: "阿尔伯塔省", city: "埃德蒙顿、贾斯珀"},
+            "782": {country: "加拿大", region: "新斯科舍省", city: "哈利法克斯、悉尼"},
+            "807": {country: "加拿大", region: "安大略省", city: "雷霆湾、桑德贝"},
+            "819": {country: "加拿大", region: "魁北克省", city: "魁北克市、舍布鲁克"},
+            "825": {country: "加拿大", region: "阿尔伯塔省", city: "卡尔加里、埃德蒙顿"},
+            "867": {country: "加拿大", region: "育空地区/西北地区/努纳武特地区", city: "怀特霍斯、耶洛奈夫"},
+            "902": {country: "加拿大", region: "新斯科舍省/爱德华王子岛省", city: "哈利法克斯、夏洛特敦"},
+            "905": {country: "加拿大", region: "安大略省", city: "多伦多周边、哈密尔顿、奥克维尔"},
+            
+            // 美国区号：州 + 核心城市
+            "201": {country: "美国", region: "新泽西州", city: "泽西市、霍博肯"},
+            "202": {country: "美国", region: "华盛顿哥伦比亚特区", city: "华盛顿市区"},
+            "203": {country: "美国", region: "康涅狄格州", city: "布里奇波特、纽黑文"},
+            "205": {country: "美国", region: "阿拉巴马州", city: "伯明翰、塔斯卡卢萨"},
+            "212": {country: "美国", region: "纽约州", city: "纽约曼哈顿市区"},
+            "213": {country: "美国", region: "加利福尼亚州", city: "洛杉矶市区"},
+            "214": {country: "美国", region: "得克萨斯州", city: "达拉斯市区"},
+            "215": {country: "美国", region: "宾夕法尼亚州", city: "费城市区"},
+            "216": {country: "美国", region: "俄亥俄州", city: "克利夫兰市区"},
+            "217": {country: "美国", region: "伊利诺伊州", city: "斯普林菲尔德、尚佩恩"},
+            "218": {country: "美国", region: "明尼苏达州", city: "德卢斯、圣保罗郊区"},
+            "219": {country: "美国", region: "印第安纳州", city: "加里、密歇根城"},
+            "224": {country: "美国", region: "伊利诺伊州", city: "芝加哥郊区"},
+            "225": {country: "美国", region: "路易斯安那州", city: "巴吞鲁日、新奥尔良郊区"},
+            "228": {country: "美国", region: "密西西比州", city: "比洛克西、格尔夫波特"},
+            "229": {country: "美国", region: "佐治亚州", city: "奥尔巴尼、瓦尔多斯塔"},
+            "231": {country: "美国", region: "密歇根州", city: "特拉弗斯城、马斯基根"},
+            "234": {country: "美国", region: "俄亥俄州", city: "阿克伦、坎顿"},
+            "239": {country: "美国", region: "佛罗里达州", city: "迈尔斯堡、那不勒斯"},
+            "240": {country: "美国", region: "马里兰州", city: "巴尔的摩郊区、银泉"},
+            "248": {country: "美国", region: "密歇根州", city: "底特律郊区、庞蒂亚克"},
+            "251": {country: "美国", region: "阿拉巴马州", city: "莫比尔、彭萨科拉周边"},
+            "252": {country: "美国", region: "北卡罗来纳州", city: "格林维尔、伊丽莎白市"},
+            "253": {country: "美国", region: "华盛顿州", city: "塔科马、西雅图郊区"},
+            "254": {country: "美国", region: "得克萨斯州", city: "韦科、基林"},
+            "256": {country: "美国", region: "阿拉巴马州", city: "亨茨维尔、迪凯特"},
+            "260": {country: "美国", region: "印第安纳州", city: "韦恩堡、安哥拉"},
+            "262": {country: "美国", region: "威斯康星州", city: "密尔沃基郊区、拉辛"},
+            "267": {country: "美国", region: "宾夕法尼亚州", city: "费城郊區"},
+            "269": {country: "美国", region: "密歇根州", city: "卡拉马祖、巴特尔克里克"},
+            "270": {country: "美国", region: "肯塔基州", city: "鲍灵格林、欧文斯伯勒"},
+            "272": {country: "美国", region: "宾夕法尼亚州", city: "威尔克斯-巴里、斯克兰顿"},
+            "276": {country: "美国", region: "弗吉尼亚州", city: "布里斯托尔、马丁斯维尔"},
+            "281": {country: "美国", region: "得克萨斯州", city: "休斯顿郊区"},
+            "301": {country: "美国", region: "马里兰州", city: "巴尔的摩市区、罗克维尔"},
+            "302": {country: "美国", region: "特拉华州", city: "威尔明顿、多佛"},
+            "303": {country: "美国", region: "科罗拉多州", city: "丹佛市区、博尔德"},
+            "304": {country: "美国", region: "西弗吉尼亚州", city: "查尔斯顿、亨廷顿"},
+            "305": {country: "美国", region: "佛罗里达州", city: "迈阿密市区、基韦斯特"},
+            "307": {country: "美国", region: "怀俄明州", city: "夏延、杰克逊霍尔"},
+            "308": {country: "美国", region: "内布拉斯加州", city: "格兰德岛、北普拉特"},
+            "309": {country: "美国", region: "伊利诺伊州", city: "皮奥里亚、莫林"},
+            "310": {country: "美国", region: "加利福尼亚州", city: "洛杉矶西区、比弗利山庄"},
+            "312": {country: "美国", region: "伊利诺伊州", city: "芝加哥市区"},
+            "313": {country: "美国", region: "密歇根州", city: "底特律市区"},
+            "314": {country: "美国", region: "密苏里州", city: "圣路易斯市区"},
+            "315": {country: "美国", region: "纽约州", city: "锡拉丘兹、沃特敦"},
+            "316": {country: "美国", region: "堪萨斯州", city: "威奇托、牛顿"},
+            "317": {country: "美国", region: "印第安纳州", city: "印第安纳波利斯市区"},
+            "318": {country: "美国", region: "路易斯安那州", city: "什里夫波特、门罗"},
+            "319": {country: "美国", region: "艾奥瓦州", city: "锡达拉皮兹、爱荷华城"},
+            "320": {country: "美国", region: "明尼苏达州", city: "圣克劳德、亚历山德里亚"},
+            "323": {country: "美国", region: "加利福尼亚州", city: "洛杉矶市区、好莱坞"},
+            "325": {country: "美国", region: "得克萨斯州", city: "阿比林、圣安吉洛"},
+            "330": {country: "美国", region: "俄亥俄州", city: "坎顿、扬斯敦"},
+            "331": {country: "美国", region: "伊利诺伊州", city: "芝加哥郊区"},
+            "334": {country: "美国", region: "阿拉巴马州", city: "蒙哥马利、欧佩莱卡"},
+            "336": {country: "美国", region: "北卡罗来纳州", city: "温斯顿-塞勒姆、格林斯伯勒"},
+            "337": {country: "美国", region: "路易斯安那州", city: "拉斐特、莱克查尔斯"},
+            "339": {country: "美国", region: "马萨诸塞州", city: "波士顿郊区"},
+            "341": {country: "美国", region: "加利福尼亚州", city: "旧金山郊区"},
+            "347": {country: "美国", region: "纽约州", city: "纽约皇后区、布鲁克林"},
+            "352": {country: "美国", region: "佛罗里达州", city: "盖恩斯维尔、奥卡拉"},
+            "360": {country: "美国", region: "华盛顿州", city: "西雅图郊区、奥林匹亚"},
+            "361": {country: "美国", region: "得克萨斯州", city: "科珀斯克里斯蒂、维多利亚"},
+            "385": {country: "美国", region: "犹他州", city: "盐湖城郊区、普罗沃"},
+            "386": {country: "美国", region: "佛罗里达州", city: "代托纳比奇、帕拉特卡"}
+        };
+
+        // 查询核心逻辑
+        function checkLocation() {
+            const phoneNum = document.getElementById("phoneNum").value.trim();
+            const resultBox = document.getElementById("result");
+            resultBox.className = "result";
+            resultBox.innerHTML = "";
+
+            // 校验输入：必须是10位纯数字
+            if (!/^\d{10}$/.test(phoneNum)) {
+                resultBox.className = "result error";
+                resultBox.innerHTML = `<p>输入错误！请输入10位纯数字（区号3位+本地号7位），无需+1和分隔符</p>`;
+                return;
+            }
+
+            // 提取前3位区号
+            const areaCode = phoneNum.substring(0, 3);
+            const location = naAreaCodes[areaCode];
+
+            // 匹配归属地并返回结果
+            if (location) {
+                resultBox.className = "result success";
+                resultBox.innerHTML = `
+                    <p>号码前3位区号：<span>${areaCode}</span></p>
+                    <p>归属国家：<span>${location.country}</span></p>
+                    <p>归属地区：<span>${location.region}</span></p>
+                    <p>对应核心城市：<span>${location.city}</span></p>
+                `;
+            } else {
+                resultBox.className = "result error";
+                resultBox.innerHTML = `<p>未查询到该区号信息！可能是小众区号或非美加地区号码</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
