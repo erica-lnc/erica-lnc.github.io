@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>香港海洋公園離線全景點地圖（經典顯示+全功能版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+        }
+        :root {
+            --light-bg: #f5f7fa;
+            --light-card: #ffffff;
+            --light-text: #2d3436;
+            --light-border: #dfe6e9;
+            --light-highlight: #0984e3;
+            --dark-bg: #18191a;
+            --dark-card: #242526;
+            --dark-text: #e4e6eb;
+            --dark-border: #3a3b3c;
+            --dark-highlight: #74b9ff;
+            --panda-color: #ff7675;
+            --checked-color: #00b894;
+            --close-tip: #e17055;
+            --forbid-color: #636e72;
+            --forbid-bg: #dfe6e933;
+            --traffic-color: #00cec9;
+            --animal-color: #2ecc71;
+            --show-color: #a29bfe;
+            --thrill-color: #fd79a8;
+            --family-color: #fdcb6e;
+            --aqua-color: #74b9ff;
+            --sanrio-color: #ff69b4;
+            --game-color: #f39c12;
+            --theme-color: #8e44ad;
+            --event-color: #e17055;
+            --service-color: #27ae60;
+        }
+        .light-theme {
+            --bg: var(--light-bg);
+            --card: var(--light-card);
+            --text: var(--light-text);
+            --border: var(--light-border);
+            --highlight: var(--light-highlight);
+        }
+        .dark-theme {
+            --bg: var(--dark-bg);
+            --card: var(--dark-card);
+            --text: var(--dark-text);
+            --border: var(--dark-border);
+            --highlight: var(--dark-highlight);
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            transition: all 0.3s ease;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--highlight);
+        }
+        .tools {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--highlight);
+            color: white;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .time-tip {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        .close-tip {
+            color: var(--close-tip);
+            font-weight: 500;
+        }
+        .park-map {
+            width: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
+            background-color: var(--card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .map-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed var(--border);
+        }
+        .type-title {
+            font-size: 1.1rem;
+            margin: 1.5rem 0 0.8rem;
+            color: var(--highlight);
+            font-weight: 600;
+        }
+        .map-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1.2rem;
+            margin-top: 1rem;
+        }
+        .spot-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        .spot-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .spot-card.checked {
+            border-color: var(--checked-color);
+            background-color: rgba(0, 184, 148, 0.1);
+        }
+        .spot-card.forbid {
+            border-color: var(--forbid-color);
+            background-color: var(--forbid-bg);
+            opacity: 0.8;
+        }
+        .spot-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .spot-tag {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 0.8rem;
+        }
+        .tag-panda {background-color: var(--panda-color); color: white;}
+        .tag-thrill {background-color: var(--thrill-color); color: white;}
+        .tag-family {background-color: var(--family-color); color: white;}
+        .tag-aqua {background-color: var(--aqua-color); color: white;}
+        .tag-show {background-color: var(--show-color); color: white;}
+        .tag-traffic {background-color: var(--traffic-color); color: white;}
+        .tag-animal {background-color: var(--animal-color); color: white;}
+        .tag-sanrio {background-color: var(--sanrio-color); color: white;}
+        .tag-game {background-color: var(--game-color); color: white;}
+        .tag-theme {background-color: var(--theme-color); color: white;}
+        .tag-event {background-color: var(--event-color); color: white;}
+        .tag-service {background-color: var(--service-color); color: white;}
+        .spot-desc {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+        .forbid-mark {
+            position: absolute;
+            top: 0.8rem;
+            right: 0.8rem;
+            color: var(--forbid-color);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .checked-mark {
+            position: absolute;
+            top: 0.8rem;
+            right: 0.8rem;
+            color: var(--checked-color);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            z-index: 99;
+            display: none;
+        }
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--card);
+            border-radius: 10px;
+            padding: 1.8rem;
+            width: 90%;
+            max-width: 550px;
+            z-index: 100;
+            display: none;
+            border: 1px solid var(--border);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal.active, .mask.active {display: block;}
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--highlight);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-content {
+            margin: 1rem 0;
+            line-height: 1.6;
+        }
+        .modal-item {
+            margin-bottom: 0.8rem;
+            font-size: 0.95rem;
+        }
+        .modal-item strong {color: var(--highlight);}
+        .modal-panda-tip {
+            background-color: rgba(255, 118, 117, 0.1);
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--panda-color);
+        }
+        .modal-traffic-tip {
+            background-color: rgba(0, 206, 201, 0.1);
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--traffic-color);
+        }
+        .modal-show-tip {
+            background-color: rgba(162, 155, 254, 0.1);
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--show-color);
+        }
+        .modal-sanrio-tip {
+            background-color: rgba(255, 105, 180, 0.1);
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--sanrio-color);
+        }
+        .modal-game-tip {
+            background-color: rgba(243, 156, 18, 0.1);
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--game-color);
+        }
+        .modal-event-tip {
+            background-color: rgba(225, 112, 85, 0.1);
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--event-color);
+        }
+        .modal-service-tip {
+            background-color: rgba(39, 174, 96, 0.1);
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--service-color);
+        }
+        .modal-forbid-tip {
+            background-color: rgba(225, 112, 85, 0.1);
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--close-tip);
+            color: var(--close-tip);
+            font-weight: 500;
+        }
+        .modal-close {
+            text-align: right;
+            margin-top: 1.5rem;
+        }
+        @media (max-width: 768px) {
+            .header {flex-direction: column; align-items: flex-start;}
+            .title {font-size: 1.5rem;}
+            .modal-title {font-size: 1.3rem;}
+            .map-container {grid-template-columns: 1fr;}
+        }
+    </style>
+</head>
+<body class="light-theme">
+    <div class="header">
+        <h1 class="title">香港海洋公園離線全景點地圖（經典顯示+全功能版）</h1>
+        <div class="tools">
+            <span class="time-tip" id="currentTime">當前時間：加載中</span>
+            <span class="time-tip close-tip">園區閉園時間：19:00 | 超時項目禁用打卡</span>
+            <button class="btn" id="themeToggle">切換深色模式</button>
+            <button class="btn" id="clearChecked">清空打卡記錄</button>
+        </div>
+    </div>
+    <div class="park-map">
+        <h2 class="map-title">香港海洋公園 全核心項目（經典顯示+時效管控+全品類）</h2>
+        
+        <h3 class="type-title">一、園區核心交通</h3>
+        <div class="map-container" id="trafficContainer"></div>
+        <h3 class="type-title">二、Sanrio主題專屬體驗</h3>
+        <div class="map-container" id="sanrioContainer"></div>
+        <h3 class="type-title">三、特色主題區</h3>
+        <div class="map-container" id="themeContainer"></div>
+        <h3 class="type-title">四、攤位遊戲專區</h3>
+        <div class="map-container" id="gameContainer"></div>
+        <h3 class="type-title">五、動物展區（含大熊貓/極地/生態館）</h3>
+        <div class="map-container" id="animalContainer"></div>
+        <h3 class="type-title">六、刺激機動遊戲</h3>
+        <div class="map-container" id="thrillContainer"></div>
+        <h3 class="type-title">七、親子家庭遊樂</h3>
+        <div class="map-container" id="familyContainer"></div>
+        <h3 class="type-title">八、海洋主題場館</h3>
+        <div class="map-container" id="aquaContainer"></div>
+        <h3 class="type-title">九、精彩演藝表演</h3>
+        <div class="map-container" id="showContainer"></div>
+        <h3 class="type-title">十、主題活動時間表</h3>
+        <div class="map-container" id="eventContainer"></div>
+        <h3 class="type-title">十一、園區便民服務（急救/飲水/電梯/WiFi）</h3>
+        <div class="map-container" id="serviceContainer"></div>
+    </div>
+    <div class="mask" id="mask"></div>
+    <div class="modal" id="modal">
+        <h3 class="modal-title" id="modalName"></h3>
+        <div class="modal-content" id="modalContent"></div>
+        <div class="modal-close">
+            <button class="btn" id="closeModal">關閉</button>
+        </div>
+    </div>
+    <script>
+        // 香港海洋公園全景點數據（全量項目+經典顯示配置）
+        const parkData = {
+            traffic: [ // 核心交通
+                {id: 1, name: "登山纜車", tag: "traffic", tagName: "園區交通",desc: "高空觀景雙向纜車", intro: "海洋公園標誌性交通，高空俯瞰南區海景、維多利亞港風光與園區全景，視野絕佳", baseWait: 45, isTraffic: true, start: "海濱樂園（山下）", end: "高峰樂園（山上）", trafficDesc: "雙向往返無固定方向，隨上隨下，全程約8分鐘", openTime: "10:00-18:30"},
+                {id: 2, name: "海洋列車", tag: "traffic", tagName: "園區交通",desc: "海底主題快速觀光列車", intro: "全港首列海底主題列車，沉浸式體驗海底穿梭感，封閉車廂更舒適", baseWait: 30, isTraffic: true, start: "海濱樂園（山下）", end: "高峰樂園（山上）", trafficDesc: "雙向軌道分上行/下行，速度快耗時短，全程約3分鐘", openTime: "10:00-18:40"}
+            ],
+            sanrio: [ // Sanrio主題專屬
+                {id: 3, name: "Sanrio characters深海夢幻探險", tag: "sanrio", tagName: "Sanrio主題",desc: "三麗鷗深海主題體驗", intro: "Sanrio經典角色深海夢幻場景，沉浸式打卡拍照，互動裝置豐富", baseWait: 10, isSanrio: true, location: "海濱樂園 | 海濱樂園廣場", openTime: "11:00-18:30", sanrioTip: "110cm以下兒童需成人陪同，拍照出片率極高"},
+                {id: 4, name: "My Melody & Kuromi派對屋", tag: "sanrio", tagName: "Sanrio主題",desc: "美樂蒂庫洛米主題派對屋", intro: "主題互動空間+打卡點+小遊戲，適配低齡兒童與三麗鷗粉絲", baseWait: 5, isSanrio: true, location: "高峰樂園 | 動感天地", openTime: "11:00-18:00", sanrioTip: "18:00後停止入場，雨天備選室內項目"}
+            ],
+            theme: [ // 特色主題區
+                {id: 5, name: "香港大老街", tag: "theme", tagName: "特色主題區",desc: "香港復古老街主題體驗區", intro: "還原復古風貌+懷舊建築+港式文化，含特色小吃與懷舊遊戲", baseWait: 0, isTheme: true, location: "海濱樂園", openTime: "10:00-18:50", themeTip: "沉浸式感受港式老文化，拍照打卡首選"},
+                {id: 6, name: "小狐獴與大象龜之旅", tag: "theme", tagName: "特色主題區",desc: "小狐獴與大象龜互動展區", intro: "模擬非洲草原+熱帶島嶼環境，觀賞珍稀動物日常，兼具觀賞與科普", baseWait: 0, isTheme: true, location: "海濱樂園 | 亞洲動物天地", openTime: "10:00-16:30", themeTip: "16:30後停入場，僅靜態展示"}
+            ],
+            game: [ // 攤位遊戲專區
+                {id: 7, name: "動感天地攤位遊戲", tag: "game", tagName: "攤位遊戲",desc: "動感天地主題攤位遊戲", intro: "套圈、投籃、夾娃娃等經典遊戲，獲勝兌主題禮品", baseWait: 0, isGame: true, location: "高峰樂園 | 動感天地", openTime: "11:00-18:30", gameTip: "需單獨購代幣，部分遊戲有身高限制"},
+                {id: 8, name: "海洋天地攤位遊戲", tag: "game", tagName: "攤位遊戲",desc: "海洋天地主題攤位遊戲", intro: "海洋元素遊戲，獲勝兌海洋主題周邊", baseWait: 0, isGame: true, location: "高峰樂園 | 海洋天地", openTime: "11:30-18:20", gameTip: "11點半營業，代幣園區通用"},
+                {id: 9, name: "威威天地攤位遊戲", tag: "game", tagName: "攤位遊戲",desc: "威威天地親子攤位遊戲", intro: "低難度親子遊戲，兌卡通禮品，適配低齡兒童", baseWait: 0, isGame: true, location: "海濱樂園 | 威威天地", openTime: "10:30-18:40", gameTip: "可家長陪同，無需單獨購票"},
+                {id: 10, name: "香港大老街攤位遊戲", tag: "game", tagName: "攤位遊戲",desc: "大老街懷舊攤位遊戲", intro: "港式經典街頭遊戲，擲飛鏢、彈珠等，懷舊感拉滿", baseWait: 0, isGame: true, location: "海濱樂園 | 香港大老街", openTime: "10:00-18:30", gameTip: "港式風情濃厚，代幣通用"}
+            ],
+            animal: [ // 動物展區
+                {id: 11, name: "大熊貓之旅", tag: "panda", tagName: "大熊貓專屬",desc: "國寶大熊貓專屬展區", intro: "多隻大熊貓+活動區+科普展廳，全年齡段適配", baseWait: 25, isPanda: true, isAnimal: true, openTime: "10:00-17:30", pandaClose: "16:30"},
+                {id: 12, name: "雪狐居", tag: "animal", tagName: "極地動物",desc: "極地雪狐專屬展區", intro: "模擬極地雪原，觀賞雪狐日常+科普生存習性", baseWait: 0, isAnimal: true, location: "高峰樂園 | 冰極天地", openTime: "10:00-18:00"},
+                {id: 13, name: "中國建設銀行（亞洲）呈獻鱷園", tag: "animal", tagName: "爬行動物",desc: "鱷魚主題生態展區", intro: "多品種鱷魚+原生環境模擬+科普講解", baseWait: 0, isAnimal: true, location: "海濱樂園 | 夢幻水都", openTime: "10:00-18:50"},
+                {id: 14, name: "鱷魚潭", tag: "animal", tagName: "爬行動物",desc: "戶外鱷魚觀賞區", intro: "戶外濕地環境，近距離觀察鱷魚自然狀態", baseWait: 0, isAnimal: true, location: "海濱樂園 | 亞洲動物天地", openTime: "10:00-16:30", animalTip: "16:30後停入場，晴天前往更佳"},
+                {id: 15, name: "本地河溪生態館", tag: "animal", tagName: "生態展館",desc: "香港本地河溪生態展示", intro: "本地水域生態+水生生物，實景+標本科普", baseWait: 0, isAnimal: true, location: "海濱樂園 | 亞洲動物天地", openTime: "10:00-18:40"},
+                {id: 16, name: "百草生態徑", tag: "animal", tagName: "生態步道",desc: "亞洲植物生態步道", intro: "珍稀綠植+科普標識，休閒散步+自然科普", baseWait: 0, isAnimal: true, location: "海濱樂園 | 亞洲動物天地", openTime: "10:00-19:00"},
+                {id: 17, name: "威威百草谷", tag: "animal", tagName: "生態展區",desc: "威威主題百草生態區", intro: "藥用+觀賞植物，卡通科普牌適配兒童", baseWait: 0, isAnimal: true, location: "海濱樂園 | 亞洲動物天地", openTime: "10:00-18:50"},
+                {id: 18, name: "自然大揭秘", tag: "animal", tagName: "生態科普",desc: "自然生態科普展館", intro: "互動裝置+實景，兒童自然知識學習首選", baseWait: 0, isAnimal: true, location: "海濱樂園 | 亞洲動物天地", openTime: "10:00-18:30"},
+                {id: 19, name: "熱帶雨林探險徑", tag: "animal", tagName: "雨林生態",desc: "熱帶雨林生態探險徑", intro: "雨林植物+小型動物，沉浸式親子探險", baseWait: 0, isAnimal: true, location: "高峰樂園 | 熱帶雨林天地", openTime: "10:00-18:00"},
+                {id: 20, name: "樹懶與好友", tag: "animal", tagName: "珍稀動物",desc: "樹懶專屬互動展區", intro: "南美雨林環境，觀察樹懶慢動作日常+科普", baseWait: 0, isAnimal: true, location: "高峰樂園 | 冰極天地", openTime: "10:00-17:00"},
+                {id: 21, name: "熊貓山莊", tag: "animal", tagName: "熊貓主題",desc: "熊貓主題生態展區", intro: "大熊貓+小熊貓伴生，中式園林風格場館", baseWait: 0, isAnimal: true, location: "海濱樂園 | 亞洲動物天地", openTime: "10:00-17:30"},
+                {id: 22, name: "北極之旅", tag: "animal", tagName: "極地生態",desc: "北極生態主題展區", intro: "北極動植物+自然景觀，極地生態科普", baseWait: 0, isAnimal: true, location: "高峰樂園 | 冰極天地", openTime: "10:00-18:20"},
+                {id: 23, name: "Monkey Tree呈獻南極奇觀", tag: "animal", tagName: "極地動物",desc: "南極企鵝主題展區", intro: "南極環境+多品種企鵝，觀賞游泳踱步姿態", baseWait: 0, isAnimal: true, location: "高峰樂園 | 冰極天地", openTime: "10:00-18:10"},
+                {id: 24, name: "亞洲動物天地", tag: "animal", tagName: "亞洲珍稀動物",desc: "亞洲珍稀動物聚集地", intro: "小熊貓、金絲猴、馬來貘等，原生環境飼養", baseWait: 15, isAnimal: true, location: "海濱樂園", openTime: "10:00-17:00"},
+                {id: 25, name: "水母萬花筒", tag: "animal", tagName: "海洋動物",desc: "夢幻治癒水母展館", intro: "數十種珍稀水母+漸變燈光，拍照打卡絕佳", baseWait: 0, isAnimal: true, location: "高峰樂園 | 海洋天地", openTime: "10:00-18:50"},
+                {id: 26, name: "太平洋海岸", tag: "animal", tagName: "海洋動物",desc: "海獅海豹生態展區", intro: "太平洋海岸環境，觀賞海獅海豹憨態日常", baseWait: 0, isAnimal: true, location: "高峰樂園 | 海洋天地", openTime: "10:00-18:30"}
+            ],
+            thrill: [ // 刺激機動遊戲
+                {id: 27, name: "越礦飛車", tag: "thrill", tagName: "刺激機動",desc: "山林穿梭經典過山車", intro: "山林俯衝+彎道漂移，速度感拉滿", baseWait: 40, isThrill: true, heightLimit: "≥120cm", openTime: "10:00-18:00", thrillTip: "不適合孕婦，120cm以下禁乘"},
+                {id: 28, name: "極速之旅", tag: "thrill", tagName: "刺激機動",desc: "高空俯瞰跳樓機", intro: "百米高空+極速下坠，強烈失重感", baseWait: 38, isThrill: true, heightLimit: "≥110cm", openTime: "10:00-17:50", thrillTip: "不適合心臟病患者"},
+                {id: 29, name: "動感快車", tag: "thrill", tagName: "刺激機動",desc: "無地板懸掛式過山車", intro: "無地板設計+高速翻轉，全程尖叫", baseWait: 5, isThrill: true, location: "高峰樂園 | 動感天地", heightLimit: "≥140cm", openTime: "10:00-18:20", thrillTip: "140cm以下禁乘，刺激度拉滿"},
+                {id: 30, name: "極地時速", tag: "thrill", tagName: "刺激機動",desc: "極地主題動感設施", intro: "極地特效+適中速度，輕度刺激適配廣", baseWait: 10, isThrill: true, location: "高峰樂園 | 冰極天地", openTime: "10:00-18:30", thrillTip: "4歲+/≥100cm可乘，親子適配"},
+                {id: 31, name: "橫衝直撞", tag: "thrill", tagName: "刺激機動",desc: "碰碰車互動體驗", intro: "自由駕駛碰撞，互動性強", baseWait: 15, isThrill: true, location: "高峰樂園 | 動感天地", openTime: "10:00-18:40"},
+                {id: 32, name: "沖天搖擺船", tag: "thrill", tagName: "刺激機動",desc: "巨型搖擺船體驗", intro: "大擺錘式搖擺，中度刺激", baseWait: 5, isThrill: true, location: "高峰樂園 | 海洋天地", heightLimit: "≥122cm", openTime: "10:30-18:10", thrillTip: "122cm以下禁乘"},
+                {id: 33, name: "摩天輪", tag: "thrill", tagName: "刺激機動",desc: "高空摩天輪體驗", intro: "高空俯瞰園區海景，緩慢旋轉適配拍照", baseWait: 15, isThrill: true, location: "高峰樂園 | 海洋天地", heightLimit: "≥152cm", openTime: "10:30-18:20", thrillTip: "152cm以下需成人陪同"},
+                {id: 34, name: "飛天鞦韆", tag: "thrill", tagName: "刺激機動",desc: "高空旋轉鞦韆", intro: "旋轉升降+空中飛翔快感", baseWait: 10, isThrill: true, location: "高峰樂園 | 海洋天地", openTime: "10:30-18:30", thrillTip: "一般座8歲+/小童座6歲+"},
+                {id: 35, name: "狂野龍捲風", tag: "thrill", tagName: "刺激機動",desc: "龍捲風主題旋轉設施", intro: "360°旋轉+升降，強離心力失重感", baseWait: 0, isThrill: true, location: "高峰樂園 | 海洋天地", heightLimit: "137cm-195cm", openTime: "10:30-17:40", thrillTip: "身高超過限制禁乘，心臟病患者慎乘"},
+                {id: 36, name: "超速旋風", tag: "thrill", tagName: "刺激機動",desc: "超速旋轉體驗設施", intro: "高速旋轉+離心力特效，中度刺激", baseWait: 0, isThrill: true, location: "高峰樂園 | 動感天地", heightLimit: "≥122cm", openTime: "10:00-18:00", thrillTip: "122cm以下禁乘"},
+                {id: 37, name: "熱帶激流", tag: "thrill", tagName: "刺激機動",desc: "熱帶雨林漂流項目", intro: "雨林水道+急流落差，清涼刺激", baseWait: 5, isThrill: true, location: "高峰樂園 | 熱帶雨林天地", heightLimit: "≥120cm", openTime: "10:00-18:10", thrillTip: "建議穿雨衣，避免弄濕"},
+                {id: 38, name: "翻天覆地", tag: "thrill", tagName: "刺激機動",desc: "360°旋轉大擺錘", intro: "高速旋轉+大幅擺動，天旋地轉快感", baseWait: 5, isThrill: true, location: "高峰樂園 | 動感天地", heightLimit: "≥130cm", openTime: "10:00-17:50", thrillTip: "130cm以下禁乘"},
+                {id: 39, name: "雷霆節拍", tag: "thrill", tagName: "刺激機動",desc: "雷霆節拍旋轉設施", intro: "高速旋轉+音樂燈光特效，中度刺激", baseWait: 15, isThrill: true, location: "高峰樂園 | 動感天地", heightLimit: "≥130cm", openTime: "10:00-18:20", thrillTip: "130cm以下禁乘"},
+                {id: 40, name: "海洋摩天塔", tag: "thrill", tagName: "刺激機動",desc: "海洋主題高空塔", intro: "高空升降+全景海景，適配拍照", baseWait: 10, isThrill: true, location: "高峰樂園 | 海洋天地", heightLimit: "≥122cm", openTime: "10:00-18:30", thrillTip: "122cm以下需陪同"}
+            ],
+            family: [ // 親子家庭遊樂
+                {id: 41, name: "威威天地", tag: "family", tagName: "親子樂園",desc: "兒童專屬溫和遊樂區", intro: "小火車、旋轉木馬等，安全無刺激", baseWait: 15, isFamily: true, openTime: "10:00-18:50"},
+                {id: 42, name: "升空奇遇", tag: "family", tagName: "親子遊樂",desc: "兒童升空體驗設施", intro: "緩慢升降旋轉，空中俯瞰樂趣", baseWait: 5, isFamily: true, location: "海濱樂園 | 威威天地", openTime: "10:00-18:40", familyTip: "1歲+/≥91cm可乘"},
+                {id: 43, name: "小紅熊堡壘", tag: "family", tagName: "親子遊樂",desc: "小紅熊主題堡壘", intro: "滑梯+攀爬，兒童自由玩耍", baseWait: 0, isFamily: true, location: "海濱樂園 | 威威天地", openTime: "10:00-18:50", familyTip: "兒童需成人陪同"},
+                {id: 44, name: "喜寶呈獻巨人森林", tag: "family", tagName: "親子遊樂",desc: "巨人森林主題遊樂區", intro: "攀爬+滑梯，低齡兒童適配", baseWait: 0, isFamily: true, location: "海濱樂園 | 威威天地", openTime: "10:00-18:40", familyTip: "室內外結合，雨天可玩"},
+                {id: 45, name: "體體火車頭", tag: "family", tagName: "親子遊樂",desc: "兒童小火車體驗", intro: "緩慢行駛+主題場景，低齡適配", baseWait: 5, isFamily: true, location: "海濱樂園 | 威威天地", openTime: "10:00-18:30", familyTip: "1歲+/≥92cm可乘"},
+                {id: 46, name: "幻彩旋轉馬", tag: "family", tagName: "親子遊樂",desc: "夢幻旋轉木馬", intro: "夢幻燈光音樂，親子同乘首選", baseWait: 5, isFamily: true, location: "海濱樂園 | 威威天地", openTime: "10:00-18:50", familyTip: "≥107cm/≤77kg可乘"},
+                {id: 47, name: "環迴水世界", tag: "family", tagName: "親子遊樂",desc: "水世界主題旋轉設施", intro: "旋轉+水特效，清涼有趣", baseWait: 5, isFamily: true, location: "海濱樂園 | 夢幻水都", openTime: "10:00-18:20", familyTip: "兒童需陪同"},
+                {id: 48, name: "海獅開心站", tag: "family", tagName: "親子互動",desc: "海獅近距離互動體驗", intro: "海獅觀賞+投喂互動（需購券），小朋友最愛", baseWait: 20, isFamily: true, openTime: "10:30-17:00"},
+                {id: 49, name: "旋轉水戰", tag: "family", tagName: "親子戲水",desc: "親子互動戲水項目", intro: "旋轉噴水互動，夏季清涼首選", baseWait: 18, isFamily: true, openTime: "10:00-17:50"}
+            ],
+            aqua: [ // 海洋主題場館
+                {id: 50, name: "海洋奇觀", tag: "aqua", tagName: "海洋場館",desc: "全港超大海底水族館", intro: "巨型弧形屏+數百種海洋生物，鯊魚魟魚群游", baseWait: 35, isAqua: true, openTime: "10:00-18:50"},
+                {id: 51, name: "深海迷程", tag: "aqua", tagName: "海洋探索",desc: "沉浸式深海探索體驗館", intro: "光影特效+實景，感受深海神秘", baseWait: 25, isAqua: true, openTime: "10:00-18:30"},
+                {id: 52, name: "海豚探秘", tag: "aqua", tagName: "海洋動物",desc: "海豚生態探秘展區", intro: "海豚日常+科普講解，了解習性與保護", baseWait: 0, isAqua: true, location: "高峰樂園 | 海洋天地", openTime: "10:00-17:30"}
+            ],
+            show: [ // 精彩演藝表演
+                {id: 53, name: "海豚表演劇場", tag: "show", tagName: "王牌表演",desc: "海豚海獅默契互動秀", intro: "跳躍、頂球、水上載人等高難度動作", baseWait: 50, isShow: true, showTip: "多場次，提前30分鐘停入場，錯峰佔位", openTime: "11:00-17:00"},
+                {id: 54, name: "海洋奇遇", tag: "show", tagName: "光影表演",desc: "夜間海洋主題光影秀", intro: "燈光+音樂+水幕特效，視覺震撼", baseWait: 30, isShow: true, showTip: "僅17:00後場次，閉園前人流多", openTime: "17:00-18:30"},
+                {id: 55, name: "威威劇場", tag: "show", tagName: "卡通表演",desc: "兒童專屬卡通舞台劇", intro: "卡通主角+歌舞互動，劇情輕鬆", baseWait: 22, isShow: true, showTip: "場次密集，無需久排", openTime: "10:30-17:30"}
+            ],
+            event: [ // 主題活動
+                {id: 56, name: "光影盛夜 - Sanrio characters夢幻慶典", tag: "event", tagName: "主題活動",desc: "Sanrio光影夢幻慶典", intro: "夜間光影秀+Sanrio主題特效，水幕投影+燈光表演，視覺效果拉滿", baseWait: 0, isEvent: true, location: "海濱樂園 | 夢幻水都", openTime: "19:00-19:30", eventTip: "每日19:00一場，提前15分鐘佔位最佳"},
+                {id: 57, name: "Sanrio characters見面會（海濱樂園）", tag: "event", tagName: "主題活動",desc: "海濱樂園Sanrio角色見面會", intro: "Hello Kitty、My Melody等角色互動合影，粉絲必打卡", baseWait: 0, isEvent: true, location: "海濱樂園 | 深海夢幻探險旁", openTime: "12:30,14:30,16:00,18:00", eventTip: "每日四場，18:00為最後一場"},
+                {id: 58, name: "Sanrio characters見面會（高峰樂園）", tag: "event", tagName: "主題活動",desc: "高峰樂園Sanrio角色見面會", intro: "Kuromi、布丁狗等角色互動，含小型舞台表演", baseWait: 0, isEvent: true, location: "高峰樂園 | 高峰樂園廣場", openTime: "已結束", eventTip: "當日所有節目已結束，次日可關注最新場次"},
+                {id: 59, name: "萌友大探索", tag: "event", tagName: "主題活動",desc: "萌寵互動探索活動", intro: "與園區萌寵近距離互動+科普講解，適配親子家庭", baseWait: 0, isEvent: true, location: "海濱樂園 | 竹林天地", openTime: "已結束", eventTip: "當日活動結束，可諮詢工作人員次日安排"},
+                {id: 60, name: "威威與好友會面（熱帶雨林禮品店外）", tag: "event", tagName: "主題活動",desc: "熱帶雨林威威好友見面會", intro: "威威卡通角色互動合影+舞蹈表演，兒童最愛", baseWait: 0, isEvent: true, location: "高峰樂園 | 熱帶雨林天地", openTime: "已結束", eventTip: "當日節目結束，次日10:00開始"},
+                {id: 61, name: "威威與好友會面（海濱禮品廊外）", tag: "event", tagName: "主題活動",desc: "海濱禮品廊威威好友見面會", intro: "威威+海豚好友互動，含合影與小禮品", baseWait: 0, isEvent: true, location: "海濱樂園 | 夢幻水都", openTime: "已結束", eventTip: "當日無加場，可前往其他互動點"},
+                {id: 62, name: "霓虹閃爍匯演", tag: "event", tagName: "主題活動",desc: "香港大老街霓虹匯演", intro: "復古霓虹燈光秀+港式街頭表演，沉浸式老香港體驗", baseWait: 0, isEvent: true, location: "海濱樂園 | 香港大老街", openTime: "17:30,18:00", eventTip: "每日兩場，18:00場燈光效果更佳"},
+                {id: 63, name: "威威村莊海洋守護者—大戰塑膠惡魔", tag: "event", tagName: "主題活動",desc: "海洋環保主題舞台劇", intro: "以塑膠污染為主題的互動舞台劇，科普環保知識", baseWait: 0, isEvent: true, location: "高峰樂園 | 海洋天地", openTime: "已結束", eventTip: "當日演出結束，可關注園區公告"},
+                {id: 64, name: "海洋公園明星大決鬥", tag: "event", tagName: "主題活動",desc: "園區明星角色對決表演", intro: "卡通角色舞台對決+互動遊戲，氛圍熱烈", baseWait: 0, isEvent: true, location: "海濱樂園 | 竹林天地", openTime: "今日無節目", eventTip: "當日無預設場次，可前往其他表演區"},
+                {id: 65, name: "與街頭藝人會面", tag: "event", tagName: "主題活動",desc: "街頭藝人互動表演", intro: "魔術、雜耍等街頭藝術表演+觀眾互動", baseWait: 0, isEvent: true, location: "高峰樂園 | 雨林求知地帶", openTime: "已結束", eventTip: "當日表演結束，明日11:00開始"},
+                {id: 66, name: "樂隊表演", tag: "event", tagName: "主題活動",desc: "海洋金銀島樂隊表演", intro: "現場樂隊演奏+流行金曲，氛圍感十足", baseWait: 0, isEvent: true, location: "高峰樂園 | 海洋金銀島", openTime: "已結束", eventTip: "當日演出結束，週末場次更多"},
+                {id: 67, name: "動感快車的秘密", tag: "event", tagName: "主題活動",desc: "動感快車幕後揭秘", intro: "過山車幕後製作+安全科普+工作人員講解", baseWait: 0, isEvent: true, location: "高峰樂園 | 動感天地", openTime: "已結束", eventTip: "每日15:00一場，需提前報名"}
+            ],
+            service: [ // 園區便民服務
+                {id: 68, name: "救護站及自動體外心臟去顫器", tag: "service", tagName: "急救服務",desc: "園區急救站與AED設備", intro: "提供緊急醫療救助+心臟除顫設備，保障遊客安全", baseWait: 0, isService: true, serviceTip: "急救站位置：夢幻水都、動感天地、海洋天地；AED設備：夢幻水都急救站、海洋列車海濱站出口、動感天地急救站、北極之旅地下、海洋金銀島對面飲食區、海洋天地急救站"},
+                {id: 69, name: "飲水機", tag: "service", tagName: "飲水服務",desc: "園區直飲水設備", intro: "免費直飲水供應，方便遊客補水，衛生安全", baseWait: 0, isService: true, serviceTip: "飲水機位置：海濱樂園（近海龍王餐廳升降機入口）、高峰樂園（尋鯊探祕出口）；使用需用水樽/水杯，勿接觸出水口"},
+                {id: 70, name: "升降機", tag: "service", tagName: "電梯服務",desc: "園區無障礙電梯", intro: "提供無障礙升降服務，適配行動不便遊客", baseWait: 0, isService: true, serviceTip: "升降機位置：公園正門入口停車場、海濱樂園（海龍王餐廳/海洋奇觀）、高峰樂園（北極之旅/極地時速/動感快車/尋鯊探祕）"},
+                {id: 71, name: "免費Wi-Fi覆蓋", tag: "service", tagName: "網絡服務",desc: "園區免費WiFi", intro: "全園覆蓋免費WiFi，滿足遊客上網需求", baseWait: 0, isService: true, serviceTip: "官方WiFi名稱：OceanPark Free WiFi、OceanPark Free WiFi Encrypted、Wi-Fi.HK via OP（每日可用30分鐘）；連接後即可使用，部分區域信號更強"}
+            ]
+        };
+        // 全局核心時效變量
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const currentTimeStr = now.toLocaleString("zh-HK");
+        const parkCloseHour = 19;
+        const checkedSpots = JSON.parse(localStorage.getItem("hkOceanParkChecked")) || [];
+        // 初始化當前時間顯示
+        document.getElementById("currentTime").textContent = `當前時間：${currentTimeStr}`;
+        // 1. 時效判斷核心函數
+        function isSpotForbid(spot) {
+            if (currentHour >= parkCloseHour || currentHour < 9) return true;
+            if (!spot.openTime || spot.isService) return false; // 便民服務無時效限制
+            if (spot.openTime === "已結束" || spot.openTime === "今日無節目") return true;
+            
+            const [openStart, openEnd] = spot.openTime.split(",").length > 1 ? [spot.openTime.split(",").pop(), spot.openTime.split(",").pop()] : spot.openTime.split("-");
+            if (!openEnd) return spot.openTime.split(":").map(Number)[0] < currentHour || (spot.openTime.split(":").map(Number)[0] === currentHour && spot.openTime.split(":").map(Number)[1] < currentMinute);
+            
+            const [startH, startM] = openStart.split(":").map(Number);
+            const [endH, endM] = openEnd.split(":").map(Number);
+            const nowTotalMin = currentHour * 60 + currentMinute;
+            const startTotalMin = startH * 60 + startM;
+            const endTotalMin = endH * 60 + endM;
+            
+            if (nowTotalMin < startTotalMin || nowTotalMin > endTotalMin) return true;
+            if (spot.isPanda && spot.pandaClose) {
+                const [pCloseH, pCloseM] = spot.pandaClose.split(":").map(Number);
+                const pCloseTotalMin = pCloseH * 60 + pCloseM;
+                if (nowTotalMin > pCloseTotalMin) return true;
+            }
+            return false;
+        }
+        // 2. 實時排隊時長計算
+        function calcWaitTime(baseWait) {
+            if (currentHour >= parkCloseHour || currentHour < 9) return "園區已閉園";
+            let multiple = 1.0;
+            if (currentHour >= 10 && currentHour < 14) multiple = 1.8;
+            else if (currentHour >= 14 && currentHour < 17) multiple = 1.5;
+            else if (currentHour >= parkCloseHour - 1) multiple = 0.5;
+            return baseWait > 0 ? `${Math.round(baseWait * multiple)}分鐘左右` : "無需排隊";
+        }
+        // 3. 全景點渲染（經典顯示：所有卡片均可點擊）
+        function renderAllSpots() {
+            for (const type in parkData) {
+                const container = document.getElementById(`${type}Container`);
+                container.innerHTML = "";
+                parkData[type].forEach(spot => {
+                    const isChecked = checkedSpots.includes(spot.id);
+                    const isForbid = spot.isService ? false : isSpotForbid(spot);
+                    const waitTime = calcWaitTime(spot.baseWait);
+                    const card = document.createElement("div");
+                    // 僅加樣式，不屏蔽點擊
+                    card.className = `spot-card ${isChecked ? "checked" : ""} ${isForbid ? "forbid" : ""}`;
+                    card.dataset.id = spot.id;
+                    card.dataset.spot = JSON.stringify(spot);
+                    card.innerHTML = `
+                        <div class="spot-name">${spot.name}</div>
+                        <span class="spot-tag tag-${spot.tag}">${spot.tagName}</span>
+                        <div class="spot-desc">${spot.desc}</div>
+                        ${isChecked ? '<div class="checked-mark">✓ 已打卡</div>' : ""}
+                        ${isForbid ? '<div class="forbid-mark">❌ 已超時</div>' : ""}
+                    `;
+                    container.appendChild(card);
+                    // 所有卡片均可點擊彈窗
+                    card.addEventListener("click", () => openModal(spot));
+                });
+            }
+        }
+        // 4. 彈窗詳情（超時僅禁用打卡，保留查看功能）
+        function openModal(spot) {
+            const modal = document.getElementById("modal");
+            const modalName = document.getElementById("modalName");
+            const modalContent = document.getElementById("modalContent");
+            const waitTime = calcWaitTime(spot.baseWait);
+            const isForbid = spot.isService ? false : isSpotForbid(spot);
+            let forbidTip = "", pandaTip = "", trafficTip = "", showTip = "", sanrioTip = "", gameTip = "", themeTip = "", animalTip = "", thrillTip = "", familyTip = "", eventTip = "", serviceTip = "";
+            let openStatus = spot.isService ? "✅ 全年開放，隨時可用" : (isForbid ? "❌ 已超時，無法參與/打卡，僅可查看詳情" : "✅ 正常開放，可參與+可打卡");
+            if (isForbid && !spot.isService) {
+                forbidTip = `<div class="modal-forbid-tip">⚠️ 時效管控提示：當前時間已超出開放時段/活動已結束，無法參與且<b>禁止標記打卡</b>，僅可查看項目詳情！</div>`;
+            }
+            if (spot.isPanda) {
+                const [pCloseH, pCloseM] = spot.pandaClose.split(":").map(Number);
+                const pCloseTotalMin = pCloseH * 60 + pCloseM;
+                const nowTotalMin = currentHour * 60 + currentMinute;
+                pandaTip = nowTotalMin > pCloseTotalMin
+                ? `<div class="modal-panda-tip">🐼 大熊貓專屬提示：已過16:30外場關閉時間，僅玻璃展廳靜態展示，且禁止打卡！</div>`
+                : `<div class="modal-panda-tip">🐼 大熊貓專屬提示：16:30前外場活動，之後僅內場展示，可正常打卡</div>`;
+            }
+            if (spot.isTraffic) trafficTip = `<div class="modal-traffic-tip">🚇 交通提示：${spot.start}→${spot.end}，${spot.trafficDesc}</div>`;
+            if (spot.isShow) showTip = `<div class="modal-show-tip">🎭 表演提示：${spot.showTip}</div>`;
+            if (spot.isSanrio) sanrioTip = `<div class="modal-sanrio-tip">🎀 Sanrio提示：${spot.location}，${spot.sanrioTip}</div>`;
+            if (spot.isGame) gameTip = `<div class="modal-game-tip">🎮 攤位提示：${spot.location}，${spot.gameTip}</div>`;
+            if (spot.isTheme) themeTip = `<div class="modal-show-tip">🏮 主題區提示：${spot.location}，${spot.themeTip}</div>`;
+            if (spot.animalTip) animalTip = `<div class="modal-show-tip">🐾 動物提示：${spot.animalTip}</div>`;
+            if (spot.thrillTip) thrillTip = `<div class="modal-show-tip">🎢 遊玩提示：${spot.thrillTip} ${spot.heightLimit ? "身高要求："+spot.heightLimit : ""}</div>`;
+            if (spot.familyTip) familyTip = `<div class="modal-show-tip">👶 親子提示：${spot.familyTip}</div>`;
+            if (spot.isEvent) eventTip = `<div class="modal-event-tip">🎉 活動提示：${spot.location}，${spot.eventTip}</div>`;
+            if (spot.isService) serviceTip = `<div class="modal-service-tip">💡 服務提示：${spot.serviceTip}</div>`;
+            let basicInfo = `<div class="modal-item"><strong>核心內容：</strong>${spot.intro}</div>`;
+            basicInfo += `<div class="modal-item"><strong>實時排隊：</strong>${waitTime}</div>`;
+            basicInfo += `<div class="modal-item"><strong>當前狀態：</strong>${openStatus}</div>`;
+            if (spot.openTime && !spot.isService) basicInfo += `<div class="modal-item"><strong>開放/舉辦時間：</strong>${spot.openTime}</div>`;
+            if (spot.location) basicInfo += `<div class="modal-item"><strong>位置：</strong>${spot.location}</div>`;
+            if (spot.heightLimit) basicInfo += `<div class="modal-item"><strong>身高要求：</strong>${spot.heightLimit}</div>`;
+            modalName.textContent = spot.name;
+            modalContent.innerHTML = basicInfo + forbidTip + pandaTip + trafficTip + showTip + sanrioTip + gameTip + themeTip + animalTip + thrillTip + familyTip + eventTip + serviceTip;
+            modal.classList.add("active");
+            document.getElementById("mask").classList.add("active");
+            modal.dataset.currentId = spot.id;
+        }
+        // 5. 關閉彈窗+打卡邏輯（超時項目禁用打卡）
+        document.getElementById("closeModal").addEventListener("click", () => {
+            const modal = document.getElementById("modal");
+            const mask = document.getElementById("mask");
+            const currentSpotId = parseInt(modal.dataset.currentId);
+            const currentSpot = parkData[Object.keys(parkData).find(type => parkData[type].some(s => s.id === currentSpotId))]?.find(s => s.id === currentSpotId);
+            // 僅未超時+非服務項目，才執行打卡
+            if (currentSpotId && !checkedSpots.includes(currentSpotId) && !isSpotForbid(currentSpot) && !currentSpot.isService) {
+                checkedSpots.push(currentSpotId);
+                localStorage.setItem("hkOceanParkChecked", JSON.stringify(checkedSpots));
+                renderAllSpots();
+            }
+            modal.classList.remove("active");
+            mask.classList.remove("active");
+        });
+        document.getElementById("mask").addEventListener("click", () => {
+            document.getElementById("modal").classList.remove("active");
+            document.getElementById("mask").classList.remove("active");
+        });
+        // 6. 深淺色切換
+        const themeToggle = document.getElementById("themeToggle");
+        const body = document.body;
+        if (localStorage.getItem("hkOceanParkTheme") === "dark") body.classList.add("dark-theme");
+        themeToggle.addEventListener("click", () => {
+            const isDark = body.classList.toggle("dark-theme");
+            localStorage.setItem("hkOceanParkTheme", isDark ? "dark" : "light");
+            themeToggle.textContent = isDark ? "切換淺色模式" : "切換深色模式";
+        });
+        // 7. 清空打卡記錄
+        document.getElementById("clearChecked").addEventListener("click", () => {
+            if (confirm("確定清空所有打卡記錄嗎？")) {
+                localStorage.removeItem("hkOceanParkChecked");
+                checkedSpots.length = 0;
+                renderAllSpots();
+            }
+        });
+        // 初始化渲染
+        renderAllSpots();
+    </script>
+</body>
+</html>
