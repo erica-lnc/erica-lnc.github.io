@@ -200,6 +200,15 @@
             text-align: center;
             display: none;
         }
+        .html-tip {
+            background-color: #fcf1f7;
+            border-left: 4px solid #e53e3e;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #4a5568;
+            display: none;
+        }
         @media (max-width: 600px) {
             .container {
                 padding: 25px;
@@ -218,10 +227,8 @@
             <p>选择模型 → 输入需求 → 一键生成下载 🚀</p>
         </div>
 
-        <!-- 服务器连接状态提示 -->
         <div id="serverStatus" class="status-bar"></div>
 
-        <!-- 模型选择下拉框 -->
         <div class="model-select-group">
             <label for="modelSelect">🤖 选择可用模型：</label>
             <select id="modelSelect" disabled>
@@ -242,8 +249,9 @@
         <div class="status">
             <span class="loading" id="loading">正在生成中... 请稍候 ⏳</span>
             <span class="error" id="error">❌ 生成失败，请检查配置或重试</span>
+            <div class="html-tip" id="htmlTip">⚠️ 服务器返回了HTML页面，可能是接口地址错误、跨域拦截或服务器未启动</div>
         </div>
-        <div class="hint" id="hint">💡 提示：1.检查服务器地址是否正确 2.按F12查看控制台错误 3.确认服务器是否支持跨域</div>
+        <div class="hint" id="hint">💡 提示：1.检查接口地址是否正确 2.按F12查看Network标签的请求详情 3.确认服务器是否开启CORS</div>
 
         <div class="result-box" id="resultBox">
             <div class="result-header">
@@ -258,14 +266,9 @@
     <script>
         // ==================== 核心配置区域（必填！） ====================
         const SERVER_CONFIG = {
-            // 1. 共用服务器的【模型列表接口地址】（必填，获取可用模型）
-            modelListUrl: "https://free.v36.cm", 
-            // 2. 共用服务器的【代码生成接口地址】（必填，提交生成请求）
-            generateUrl: "https://free.v36.cm",
-            // 3. 服务器需要的认证密钥（如果需要的话，没有则留空）
+            modelListUrl: "https://free.v36.cm/api/models", 
+            generateUrl: "https://free.v36.cm/api/generate",
             apiKey: "sk-bvcnqkYbJU7C6yGwDc07E3D3F7884c10897d8dB60f185fCe",
-            // 4. 模型列表接口返回的字段名（根据服务器实际返回调整）
-            // 假设服务器返回格式：{ "models": ["model1", "model2"] } 或 { "data": ["model1"] }
             modelListField: "models" 
         };
         // =================================================================
@@ -280,32 +283,30 @@
         const error = document.getElementById('error');
         const hint = document.getElementById('hint');
         const serverStatus = document.getElementById('serverStatus');
+        const htmlTip = document.getElementById('htmlTip');
 
-        // 页面加载后，自动获取服务器模型列表
         window.onload = async () => {
             await fetchModelList();
         };
 
-        // 从服务器获取可用模型列表
         async function fetchModelList() {
             try {
                 const headers = {};
-                if (SERVER_CONFIG.apiKey) {
-                    headers['Authorization'] = `Bearer ${SERVER_CONFIG.apiKey}`;
-                }
+                if (SERVER_CONFIG.apiKey) headers['Authorization'] = `Bearer ${SERVER_CONFIG.apiKey}`;
 
                 const response = await fetch(SERVER_CONFIG.modelListUrl, { headers });
-                if (!response.ok) throw new Error(`服务器连接失败：${response.status}`);
-
-                const data = await response.json();
-                // 提取模型列表（根据服务器返回字段调整）
-                const modelList = data[SERVER_CONFIG.modelListField] || [];
-                
-                if (modelList.length === 0) {
-                    throw new Error("服务器无可用模型");
+                // 先校验响应类型
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const htmlContent = await response.text();
+                    throw new Error(`模型接口返回非JSON类型，内容前100字符：${htmlContent.substring(0,100)}`);
                 }
 
-                // 渲染模型下拉框
+                const data = await response.json();
+                const modelList = data[SERVER_CONFIG.modelListField] || [];
+                
+                if (modelList.length === 0) throw new Error("服务器无可用模型");
+
                 modelSelect.innerHTML = "";
                 modelList.forEach(model => {
                     const option = document.createElement('option');
@@ -314,7 +315,6 @@
                     modelSelect.appendChild(option);
                 });
 
-                // 更新状态
                 serverStatus.className = "status-bar status-success";
                 serverStatus.textContent = `✅ 服务器连接成功，共 ${modelList.length} 个可用模型`;
                 modelSelect.disabled = false;
@@ -323,10 +323,11 @@
                 serverStatus.className = "status-bar status-error";
                 serverStatus.textContent = `❌ ${err.message}`;
                 modelSelect.innerHTML = "<option value=''>获取失败</option>";
+                // 检测是否是HTML响应
+                if (err.message.includes("非JSON类型")) htmlTip.style.display = "block";
             }
         }
 
-        // 提取代码块
         function extractCode(text) {
             const htmlMatch = text.match(/```html([\s\S]*?)```/);
             if (htmlMatch) return htmlMatch[1].trim();
@@ -335,67 +336,57 @@
             return text.trim();
         }
 
-        // 生成代码按钮点击事件
         generateBtn.addEventListener('click', async () => {
             const selectedModel = modelSelect.value;
             const prompt = promptInput.value.trim();
 
-            if (!selectedModel) {
-                alert("请选择一个可用模型！");
-                return;
-            }
-            if (!prompt) {
-                alert("请输入你的程序需求！");
+            if (!selectedModel || !prompt) {
+                alert(selectedModel ? "请输入需求！" : "请选择模型！");
                 return;
             }
 
-            // 重置状态
             loading.style.display = 'inline';
             error.style.display = 'none';
             hint.style.display = 'none';
+            htmlTip.style.display = 'none';
             resultBox.style.display = 'none';
             downloadBtn.style.display = 'none';
 
             try {
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                if (SERVER_CONFIG.apiKey) {
-                    headers['Authorization'] = `Bearer ${SERVER_CONFIG.apiKey}`;
-                }
+                const headers = { 'Content-Type': 'application/json' };
+                if (SERVER_CONFIG.apiKey) headers['Authorization'] = `Bearer ${SERVER_CONFIG.apiKey}`;
 
-                // 发送生成请求
                 const response = await fetch(SERVER_CONFIG.generateUrl, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify({
                         model: selectedModel,
-                        prompt: `你是前端开发专家，仅输出HTML+CSS+JS代码，用\`\`\`html\`\`\`包裹，无任何解释文字。需求：${prompt}`,
+                        prompt: `仅输出HTML+CSS+JS代码，用\`\`\`html\`\`\`包裹，无解释。需求：${prompt}`,
                         stream: false
                     })
                 });
 
-                if (!response.ok) throw new Error(`生成请求失败：${response.status}`);
-                const rawText = await response.text();
-                console.log("服务器原始响应：", rawText);
+                // 强制校验响应类型
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const htmlContent = await response.text();
+                    throw new Error(`生成接口返回HTML页面，状态码：${response.status}`);
+                }
 
-                // 解析响应（兼容不同服务器返回格式）
+                const rawText = await response.text();
                 let data;
                 try {
                     data = JSON.parse(rawText);
                 } catch (jsonErr) {
-                    throw new Error(`响应格式错误，非JSON：${rawText.substring(0, 50)}...`);
+                    throw new Error(`JSON解析失败，响应内容：${rawText.substring(0,50)}`);
                 }
 
-                // 提取AI生成的内容（根据服务器返回字段调整）
                 let aiContent = data.response || data.content || data.choices?.[0]?.message?.content || "";
                 if (!aiContent) throw new Error("服务器未返回有效代码");
 
-                // 提取纯代码
                 const code = extractCode(aiContent);
-                if (!code) throw new Error("未从响应中提取到HTML代码");
+                if (!code) throw new Error("未提取到HTML代码");
 
-                // 展示结果
                 result.textContent = code;
                 resultBox.style.display = 'block';
                 downloadBtn.style.display = 'block';
@@ -406,12 +397,13 @@
                 error.textContent = `❌ 生成失败：${err.message}`;
                 error.style.display = 'inline';
                 hint.style.display = 'block';
+                // 专门提示HTML响应问题
+                if (err.message.includes("返回HTML页面")) htmlTip.style.display = "block";
             } finally {
                 loading.style.display = 'none';
             }
         });
 
-        // 下载文件
         downloadBtn.addEventListener('click', () => {
             if (!window.generatedCode) return;
             const blob = new Blob([window.generatedCode], { type: 'text/html' });
