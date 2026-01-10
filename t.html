@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>离线全球翻译器（带语言搜索）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Arial", sans-serif;
+        }
+        body {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #f0f2f5;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        .control-bar {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .lang-select-wrapper {
+            position: relative;
+            min-width: 200px;
+        }
+        .lang-search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            outline: none;
+        }
+        .lang-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            z-index: 100;
+            display: none;
+        }
+        .lang-option {
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+        .lang-option:hover {
+            background-color: #e6f7ff;
+        }
+        .lang-selected {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        #translateBtn {
+            background-color: #1677ff;
+            color: #fff;
+        }
+        #translateBtn:hover {
+            background-color: #0958d9;
+        }
+        #clearBtn {
+            background-color: #ff4d4f;
+            color: #fff;
+        }
+        #clearBtn:hover {
+            background-color: #ff1f1f;
+        }
+        .swap-btn {
+            background-color: #52c41a;
+            color: #fff;
+        }
+        .swap-btn:hover {
+            background-color: #389e0d;
+        }
+        .text-area-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        textarea {
+            flex: 1;
+            min-width: 300px;
+            min-height: 350px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            outline: none;
+        }
+        textarea:focus {
+            border-color: #1677ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="control-bar">
+            <!-- 源语言选择 -->
+            <div class="lang-select-wrapper">
+                <input type="text" class="lang-search-input" id="sourceLangSearch" placeholder="搜索源语言...">
+                <div class="lang-options" id="sourceLangOptions"></div>
+                <div class="lang-selected" id="sourceLangSelected">源语言：中文</div>
+            </div>
+
+            <!-- 语言互换按钮 -->
+            <button class="swap-btn" id="swapLangBtn">↔ 互换</button>
+
+            <!-- 目标语言选择 -->
+            <div class="lang-select-wrapper">
+                <input type="text" class="lang-search-input" id="targetLangSearch" placeholder="搜索目标语言...">
+                <div class="lang-options" id="targetLangOptions"></div>
+                <div class="lang-selected" id="targetLangSelected">目标语言：英文</div>
+            </div>
+
+            <!-- 功能按钮 -->
+            <button id="translateBtn">开始翻译</button>
+            <button id="clearBtn">清空内容</button>
+        </div>
+
+        <div class="text-area-group">
+            <textarea id="sourceText" placeholder="请输入要翻译的文本..."></textarea>
+            <textarea id="targetText" placeholder="翻译结果将显示在这里..." readonly></textarea>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/translate.js@2.0.0/dist/translate.min.js"></script>
+    <script>
+        // 支持的语言列表（语言名称: 语言代码）
+        const supportedLanguages = {
+            "中文": "zh-CN",
+            "英文": "en-US",
+            "日语": "ja-JP",
+            "
+            
