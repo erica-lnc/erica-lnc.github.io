@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>离线全球翻译器（带语言搜索）</title>
+    <title>离线全球翻译器（自动检测+搜索）</title>
     <style>
         * {
             margin: 0;
@@ -66,6 +66,11 @@
             font-size: 14px;
             color: #666;
         }
+        .detect-tip {
+            color: #1890ff;
+            font-size: 13px;
+            margin-top: 3px;
+        }
         button {
             padding: 12px 24px;
             border: none;
@@ -119,17 +124,18 @@
 <body>
     <div class="container">
         <div class="control-bar">
-            <!-- 源语言选择 -->
+            <!-- 源语言选择（带自动检测） -->
             <div class="lang-select-wrapper">
-                <input type="text" class="lang-search-input" id="sourceLangSearch" placeholder="搜索源语言...">
+                <input type="text" class="lang-search-input" id="sourceLangSearch" placeholder="搜索源语言/自动检测...">
                 <div class="lang-options" id="sourceLangOptions"></div>
-                <div class="lang-selected" id="sourceLangSelected">源语言：中文</div>
+                <div class="lang-selected" id="sourceLangSelected">源语言：自动检测</div>
+                <div class="detect-tip" id="detectTip"></div>
             </div>
 
             <!-- 语言互换按钮 -->
             <button class="swap-btn" id="swapLangBtn">↔ 互换</button>
 
-            <!-- 目标语言选择 -->
+            <!-- 目标语言选择（带搜索） -->
             <div class="lang-select-wrapper">
                 <input type="text" class="lang-search-input" id="targetLangSearch" placeholder="搜索目标语言...">
                 <div class="lang-options" id="targetLangOptions"></div>
@@ -149,10 +155,155 @@
 
     <script src="https://cdn.jsdelivr.net/npm/translate.js@2.0.0/dist/translate.min.js"></script>
     <script>
-        // 支持的语言列表（语言名称: 语言代码）
+        // 扩展支持的语言列表（语言名称: 语言代码）
         const supportedLanguages = {
+            "自动检测": "auto",
             "中文": "zh-CN",
             "英文": "en-US",
             "日语": "ja-JP",
-            "
+            "韩语": "ko-KR",
+            "法语": "fr-FR",
+            "西班牙语": "es-ES",
+            "德语": "de-DE",
+            "俄语": "ru-RU",
+            "葡萄牙语": "pt-PT",
+            "意大利语": "it-IT",
+            "阿拉伯语": "ar-SA",
+            "荷兰语": "nl-NL",
+            "瑞典语": "sv-SE",
+            "丹麦语": "da-DK",
+            "芬兰语": "fi-FI",
+            "希腊语": "el-GR",
+            "匈牙利语": "hu-HU",
+            "波兰语": "pl-PL",
+            "捷克语": "cs-CZ",
+            "土耳其语": "tr-TR",
+            "泰语": "th-TH",
+            "越南语": "vi-VN",
+            "印尼语": "id-ID",
+            "马来语": "ms-MY"
+        };
+
+        // 反向映射：语言代码转名称
+        const langCodeToName = Object.fromEntries(
+            Object.entries(supportedLanguages).map(([name, code]) => [code, name])
+        );
+
+        // 初始化翻译实例
+        const translator = new Translate();
+        let sourceLang = "auto";
+        let targetLang = "en-US";
+
+        // 渲染语言选项列表
+        function renderLangOptions(inputId, optionsId) {
+            const input = document.getElementById(inputId);
+            const options = document.getElementById(optionsId);
             
+            input.addEventListener("input", (e) => {
+                const keyword = e.target.value.trim().toLowerCase();
+                options.innerHTML = "";
+                options.style.display = "block";
+
+                Object.entries(supportedLanguages).forEach(([name, code]) => {
+                    if (name.toLowerCase().includes(keyword)) {
+                        const option = document.createElement("div");
+                        option.className = "lang-option";
+                        option.textContent = name;
+                        option.dataset.code = code;
+                        option.addEventListener("click", () => {
+                            input.value = name;
+                            if (inputId === "sourceLangSearch") {
+                                sourceLang = code;
+                                document.getElementById("sourceLangSelected").textContent = `源语言：${name}`;
+                                if (code !== "auto") {
+                                    document.getElementById("detectTip").textContent = "";
+                                }
+                            } else {
+                                targetLang = code;
+                                document.getElementById("targetLangSelected").textContent = `目标语言：${name}`;
+                            }
+                            options.style.display = "none";
+                        });
+                        options.appendChild(option);
+                    }
+                });
+
+                if (options.children.length === 0) {
+                    options.innerHTML = "<div class='lang-option' style='color:#999'>无匹配语言</div>";
+                }
+            });
+
+            // 点击外部关闭下拉框
+            document.addEventListener("click", (e) => {
+                if (!e.target.closest(`#${inputId}`) && !e.target.closest(`#${optionsId}`)) {
+                    options.style.display = "none";
+                }
+            });
+        }
+
+        // 初始化源语言和目标语言搜索框
+        renderLangOptions("sourceLangSearch", "sourceLangOptions");
+        renderLangOptions("targetLangSearch", "targetLangOptions");
+
+        // 语言互换功能
+        document.getElementById("swapLangBtn").addEventListener("click", () => {
+            const temp = sourceLang;
+            sourceLang = targetLang;
+            targetLang = temp;
+
+            const sourceName = langCodeToName[sourceLang] || "自动检测";
+            const targetName = langCodeToName[targetLang] || "英文";
+            
+            document.getElementById("sourceLangSelected").textContent = `源语言：${sourceName}`;
+            document.getElementById("targetLangSelected").textContent = `目标语言：${targetName}`;
+            document.getElementById("sourceLangSearch").value = sourceName;
+            document.getElementById("targetLangSearch").value = targetName;
+        });
+
+        // 翻译功能
+        document.getElementById("translateBtn").addEventListener("click", async () => {
+            const sourceText = document.getElementById("sourceText").value.trim();
+            if (!sourceText) {
+                alert("请输入要翻译的文本！");
+                return;
+            }
+
+            try {
+                let detectResult = "auto";
+                // 自动检测语言（排除手动选择源语言的情况）
+                if (sourceLang === "auto") {
+                    detectResult = await translator.detect(sourceText);
+                    const detectName = langCodeToName[detectResult] || "未知语言";
+                    document.getElementById("detectTip").textContent = `检测结果：${detectName}`;
+                    
+                    // 检测失败时提示手动选择
+                    if (!langCodeToName[detectResult]) {
+                        alert("自动检测语言失败，请手动选择源语言！");
+                        return;
+                    }
+                }
+
+                const finalSourceLang = sourceLang === "auto" ? detectResult : sourceLang;
+                const result = await translator.translate(sourceText, finalSourceLang, targetLang);
+                document.getElementById("targetText").value = result;
+            } catch (error) {
+                alert(`翻译失败：${error.message}`);
+            }
+        });
+
+        // 清空功能
+        document.getElementById("clearBtn").addEventListener("click", () => {
+            document.getElementById("sourceText").value = "";
+            document.getElementById("targetText").value = "";
+            document.getElementById("detectTip").textContent = "";
+        });
+
+        // 回车翻译（Ctrl+Enter）
+        document.getElementById("sourceText").addEventListener("keydown", (e) => {
+            if (e.ctrlKey && e.key === "Enter") {
+                document.getElementById("translateBtn").click();
+            }
+        });
+    </script>
+</body>
+</html>
