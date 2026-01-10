@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ 免费程序生成器 ✨</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+            padding: 35px;
+            position: relative;
+            overflow: hidden;
+        }
+        .container::before {
+            content: "💻";
+            font-size: 120px;
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            opacity: 0.05;
+            transform: rotate(15deg);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2d3748;
+            font-size: 28px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .header p {
+            color: #718096;
+            font-size: 14px;
+        }
+        .status-bar {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        .status-success {
+            background-color: #e8f4f8;
+            color: #4299e1;
+            display: block;
+        }
+        .status-error {
+            background-color: #fef2f2;
+            color: #e53e3e;
+            display: block;
+        }
+        .model-select-group {
+            margin-bottom: 20px;
+        }
+        .model-select-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .model-select-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            background-color: #fafafa;
+            cursor: pointer;
+        }
+        .input-section {
+            margin-bottom: 25px;
+        }
+        .input-section label {
+            display: block;
+            margin-bottom: 10px;
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .input-section textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            resize: vertical;
+            transition: border-color 0.3s;
+            background-color: #fafafa;
+        }
+        .input-section textarea:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        #generateBtn {
+            background-color: #4299e1;
+            color: white;
+        }
+        #generateBtn:hover {
+            background-color: #3182ce;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+        #downloadBtn {
+            background-color: #48bb78;
+            color: white;
+            display: none;
+        }
+        #downloadBtn:hover {
+            background-color: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+        .result-box {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+        }
+        .result-header {
+            background-color: #f7fafc;
+            padding: 12px 18px;
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .result-content {
+            padding: 18px;
+            background-color: #ffffff;
+            max-height: 300px;
+            overflow-x: auto;
+        }
+        .result-content pre {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #2d3748;
+        }
+        .status {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .loading {
+            color: #4299e1;
+            display: none;
+        }
+        .error {
+            color: #e53e3e;
+            display: none;
+        }
+        .hint {
+            color: #ed8936;
+            margin-top: 10px;
+            font-size: 13px;
+            text-align: center;
+            display: none;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+                margin: 20px auto;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ 免费程序生成器 ✨</h1>
+            <p>选择模型 → 输入需求 → 一键生成下载 🚀</p>
+        </div>
+
+        <!-- 服务器连接状态提示 -->
+        <div id="serverStatus" class="status-bar"></div>
+
+        <!-- 模型选择下拉框 -->
+        <div class="model-select-group">
+            <label for="modelSelect">🤖 选择可用模型：</label>
+            <select id="modelSelect" disabled>
+                <option value="">加载中...</option>
+            </select>
+        </div>
+
+        <div class="input-section">
+            <label for="prompt">📝 请输入你的程序需求：</label>
+            <textarea id="prompt" placeholder="例如：生成一个带倒计时功能的网页，纯前端，无后端依赖..."></textarea>
+        </div>
+
+        <div class="btn-group">
+            <button id="generateBtn" class="btn" disabled>⚡ 生成代码</button>
+            <button id="downloadBtn" class="btn">📥 下载文件</button>
+        </div>
+
+        <div class="status">
+            <span class="loading" id="loading">正在生成中... 请稍候 ⏳</span>
+            <span class="error" id="error">❌ 生成失败，请检查配置或重试</span>
+        </div>
+        <div class="hint" id="hint">💡 提示：1.检查服务器地址是否正确 2.按F12查看控制台错误 3.确认服务器是否支持跨域</div>
+
+        <div class="result-box" id="resultBox">
+            <div class="result-header">
+                <span>📄 生成结果</span>
+            </div>
+            <div class="result-content">
+                <pre id="result"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 核心配置区域（必填！） ====================
+        const SERVER_CONFIG = {
+            // 1. 共用服务器的【模型列表接口地址】（必填，获取可用模型）
+            modelListUrl: "https://free.v36.cm", 
+            // 2. 共用服务器的【代码生成接口地址】（必填，提交生成请求）
+            generateUrl: "https://free.v36.cm",
+            // 3. 服务器需要的认证密钥（如果需要的话，没有则留空）
+            apiKey: "sk-bvcnqkYbJU7C6yGwDc07E3D3F7884c10897d8dB60f185fCe",
+            // 4. 模型列表接口返回的字段名（根据服务器实际返回调整）
+            // 假设服务器返回格式：{ "models": ["model1", "model2"] } 或 { "data": ["model1"] }
+            modelListField: "models" 
+        };
+        // =================================================================
+
+        const modelSelect = document.getElementById('modelSelect');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const promptInput = document.getElementById('prompt');
+        const resultBox = document.getElementById('resultBox');
+        const result = document.getElementById('result');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const hint = document.getElementById('hint');
+        const serverStatus = document.getElementById('serverStatus');
+
+        // 页面加载后，自动获取服务器模型列表
+        window.onload = async () => {
+            await fetchModelList();
+        };
+
+        // 从服务器获取可用模型列表
+        async function fetchModelList() {
+            try {
+                const headers = {};
+                if (SERVER_CONFIG.apiKey) {
+                    headers['Authorization'] = `Bearer ${SERVER_CONFIG.apiKey}`;
+                }
+
+                const response = await fetch(SERVER_CONFIG.modelListUrl, { headers });
+                if (!response.ok) throw new Error(`服务器连接失败：${response.status}`);
+
+                const data = await response.json();
+                // 提取模型列表（根据服务器返回字段调整）
+                const modelList = data[SERVER_CONFIG.modelListField] || [];
+                
+                if (modelList.length === 0) {
+                    throw new Error("服务器无可用模型");
+                }
+
+                // 渲染模型下拉框
+                modelSelect.innerHTML = "";
+                modelList.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    modelSelect.appendChild(option);
+                });
+
+                // 更新状态
+                serverStatus.className = "status-bar status-success";
+                serverStatus.textContent = `✅ 服务器连接成功，共 ${modelList.length} 个可用模型`;
+                modelSelect.disabled = false;
+                generateBtn.disabled = false;
+            } catch (err) {
+                serverStatus.className = "status-bar status-error";
+                serverStatus.textContent = `❌ ${err.message}`;
+                modelSelect.innerHTML = "<option value=''>获取失败</option>";
+            }
+        }
+
+        // 提取代码块
+        function extractCode(text) {
+            const htmlMatch = text.match(/```html([\s\S]*?)```/);
+            if (htmlMatch) return htmlMatch[1].trim();
+            const codeMatch = text.match(/```([\s\S]*?)```/);
+            if (codeMatch) return codeMatch[1].trim();
+            return text.trim();
+        }
+
+        // 生成代码按钮点击事件
+        generateBtn.addEventListener('click', async () => {
+            const selectedModel = modelSelect.value;
+            const prompt = promptInput.value.trim();
+
+            if (!selectedModel) {
+                alert("请选择一个可用模型！");
+                return;
+            }
+            if (!prompt) {
+                alert("请输入你的程序需求！");
+                return;
+            }
+
+            // 重置状态
+            loading.style.display = 'inline';
+            error.style.display = 'none';
+            hint.style.display = 'none';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (SERVER_CONFIG.apiKey) {
+                    headers['Authorization'] = `Bearer ${SERVER_CONFIG.apiKey}`;
+                }
+
+                // 发送生成请求
+                const response = await fetch(SERVER_CONFIG.generateUrl, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model: selectedModel,
+                        prompt: `你是前端开发专家，仅输出HTML+CSS+JS代码，用\`\`\`html\`\`\`包裹，无任何解释文字。需求：${prompt}`,
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) throw new Error(`生成请求失败：${response.status}`);
+                const rawText = await response.text();
+                console.log("服务器原始响应：", rawText);
+
+                // 解析响应（兼容不同服务器返回格式）
+                let data;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (jsonErr) {
+                    throw new Error(`响应格式错误，非JSON：${rawText.substring(0, 50)}...`);
+                }
+
+                // 提取AI生成的内容（根据服务器返回字段调整）
+                let aiContent = data.response || data.content || data.choices?.[0]?.message?.content || "";
+                if (!aiContent) throw new Error("服务器未返回有效代码");
+
+                // 提取纯代码
+                const code = extractCode(aiContent);
+                if (!code) throw new Error("未从响应中提取到HTML代码");
+
+                // 展示结果
+                result.textContent = code;
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'block';
+                window.generatedCode = code;
+
+            } catch (err) {
+                console.error("生成失败详情：", err);
+                error.textContent = `❌ 生成失败：${err.message}`;
+                error.style.display = 'inline';
+                hint.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        // 下载文件
+        downloadBtn.addEventListener('click', () => {
+            if (!window.generatedCode) return;
+            const blob = new Blob([window.generatedCode], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `生成的程序_${new Date().getTime()}.html`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        });
+    </script>
+</body>
+</html>
