@@ -200,11 +200,11 @@
             text-align: center;
             display: none;
         }
-        .html-tip {
-            background-color: #fcf1f7;
-            border-left: 4px solid #e53e3e;
-            padding: 10px;
-            margin-top: 10px;
+        .cors-tip {
+            background-color: #faf0f5;
+            border-left: 4px solid #ed8936;
+            padding: 12px;
+            margin-top: 15px;
             font-size: 12px;
             color: #4a5568;
             display: none;
@@ -249,9 +249,14 @@
         <div class="status">
             <span class="loading" id="loading">正在生成中... 请稍候 ⏳</span>
             <span class="error" id="error">❌ 生成失败，请检查配置或重试</span>
-            <div class="html-tip" id="htmlTip">⚠️ 服务器返回了HTML页面，可能是接口地址错误、跨域拦截或服务器未启动</div>
+            <div class="hint" id="hint">💡 提示：1.检查接口地址/端口 2.确认服务器已启动 3.关闭防火墙拦截</div>
+            <div class="cors-tip" id="corsTip">
+                ⚠️ 跨域问题解决方案：<br>
+                1. 服务器端添加响应头：Access-Control-Allow-Origin: * <br>
+                2. 本地测试用浏览器跨域插件（如 Chrome 的 Allow CORS）<br>
+                3. 用 Nginx 反向代理转发请求
+            </div>
         </div>
-        <div class="hint" id="hint">💡 提示：1.检查接口地址是否正确 2.按F12查看Network标签的请求详情 3.确认服务器是否开启CORS</div>
 
         <div class="result-box" id="resultBox">
             <div class="result-header">
@@ -266,10 +271,11 @@
     <script>
         // ==================== 核心配置区域（必填！） ====================
         const SERVER_CONFIG = {
-            modelListUrl: "https://free.v36.cm/api/models", 
-            generateUrl: "https://free.v36.cm/api/generate",
+            modelListUrl: "http://free.v36.cm/api/models", 
+            generateUrl: "http://free.v36.cm/api/generate",
             apiKey: "sk-bvcnqkYbJU7C6yGwDc07E3D3F7884c10897d8dB60f185fCe",
-            modelListField: "models" 
+            modelListField: "models",
+            timeout: 10000 // 请求超时时间：10秒
         };
         // =================================================================
 
@@ -283,7 +289,18 @@
         const error = document.getElementById('error');
         const hint = document.getElementById('hint');
         const serverStatus = document.getElementById('serverStatus');
-        const htmlTip = document.getElementById('htmlTip');
+        const corsTip = document.getElementById('corsTip');
+
+        // 带超时的 fetch 请求封装
+        function fetchWithTimeout(url, options = {}) {
+            const { timeout = SERVER_CONFIG.timeout } = options;
+            return Promise.race([
+                fetch(url, options),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error(`请求超时（>${timeout}ms）`)), timeout)
+                )
+            ]);
+        }
 
         window.onload = async () => {
             await fetchModelList();
@@ -294,12 +311,12 @@
                 const headers = {};
                 if (SERVER_CONFIG.apiKey) headers['Authorization'] = `Bearer ${SERVER_CONFIG.apiKey}`;
 
-                const response = await fetch(SERVER_CONFIG.modelListUrl, { headers });
-                // 先校验响应类型
+                const response = await fetchWithTimeout(SERVER_CONFIG.modelListUrl, { headers });
                 const contentType = response.headers.get('content-type');
+                
+                if (!response.ok) throw new Error(`服务器响应错误：${response.status}`);
                 if (!contentType || !contentType.includes('application/json')) {
-                    const htmlContent = await response.text();
-                    throw new Error(`模型接口返回非JSON类型，内容前100字符：${htmlContent.substring(0,100)}`);
+                    throw new Error("模型接口返回非JSON格式数据");
                 }
 
                 const data = await response.json();
@@ -323,8 +340,11 @@
                 serverStatus.className = "status-bar status-error";
                 serverStatus.textContent = `❌ ${err.message}`;
                 modelSelect.innerHTML = "<option value=''>获取失败</option>";
-                // 检测是否是HTML响应
-                if (err.message.includes("非JSON类型")) htmlTip.style.display = "block";
+                // 判定跨域/网络错误，显示专属提示
+                if (err.message.includes("Failed to fetch") || err.message.includes("CORS")) {
+                    corsTip.style.display = "block";
+                }
+                hint.style.display = "block";
             }
         }
 
@@ -348,7 +368,7 @@
             loading.style.display = 'inline';
             error.style.display = 'none';
             hint.style.display = 'none';
-            htmlTip.style.display = 'none';
+            corsTip.style.display = 'none';
             resultBox.style.display = 'none';
             downloadBtn.style.display = 'none';
 
@@ -356,7 +376,7 @@
                 const headers = { 'Content-Type': 'application/json' };
                 if (SERVER_CONFIG.apiKey) headers['Authorization'] = `Bearer ${SERVER_CONFIG.apiKey}`;
 
-                const response = await fetch(SERVER_CONFIG.generateUrl, {
+                const response = await fetchWithTimeout(SERVER_CONFIG.generateUrl, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify({
@@ -366,24 +386,17 @@
                     })
                 });
 
-                // 强制校验响应类型
+                if (!response.ok) throw new Error(`生成请求失败：${response.status}`);
+                
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
-                    const htmlContent = await response.text();
-                    throw new Error(`生成接口返回HTML页面，状态码：${response.status}`);
+                    throw new Error("生成接口返回非JSON格式数据");
                 }
 
-                const rawText = await response.text();
-                let data;
-                try {
-                    data = JSON.parse(rawText);
-                } catch (jsonErr) {
-                    throw new Error(`JSON解析失败，响应内容：${rawText.substring(0,50)}`);
-                }
-
+                const data = await response.json();
                 let aiContent = data.response || data.content || data.choices?.[0]?.message?.content || "";
+                
                 if (!aiContent) throw new Error("服务器未返回有效代码");
-
                 const code = extractCode(aiContent);
                 if (!code) throw new Error("未提取到HTML代码");
 
@@ -397,13 +410,15 @@
                 error.textContent = `❌ 生成失败：${err.message}`;
                 error.style.display = 'inline';
                 hint.style.display = 'block';
-                // 专门提示HTML响应问题
-                if (err.message.includes("返回HTML页面")) htmlTip.style.display = "block";
+                if (err.message.includes("Failed to fetch") || err.message.includes("CORS")) {
+                    corsTip.style.display = "block";
+                }
             } finally {
                 loading.style.display = 'none';
             }
         });
 
+        // 下载文件
         downloadBtn.addEventListener('click', () => {
             if (!window.generatedCode) return;
             const blob = new Blob([window.generatedCode], { type: 'text/html' });
