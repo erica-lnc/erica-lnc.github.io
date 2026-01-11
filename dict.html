@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary & Paragraph TTS Reader (默书专用·多套存储)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        h2 {
+            font-size: 1.2rem;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        .unit-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .unit-selector select {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .vocab-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .vocab-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2196F3;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #1976D2;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #vocabList {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 80px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .vocab-tag {
+            background-color: #e3f2fd;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .vocab-tag span {
+            color: #1976D2;
+            font-weight: 500;
+        }
+        .vocab-tag button {
+            background-color: transparent;
+            color: #f44336;
+            padding: 2px 5px;
+            font-size: 14px;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        input, select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .action-buttons button {
+            padding: 12px 30px;
+            font-size: 18px;
+        }
+        .unit-manage {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .unit-manage button {
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+        .unit-manage button:nth-child(2) {
+            background-color: #f44336;
+        }
+        .unit-manage button:nth-child(2):hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>默书专用朗读工具 (多套存储版)</h1>
+
+        <!-- 默书单元选择与管理 -->
+        <div class="unit-selector">
+            <select id="unitSelect">
+                <option value="">选择默书单元</option>
+            </select>
+            <div class="unit-manage">
+                <button id="addUnitBtn">新增单元</button>
+                <button id="deleteUnitBtn">删除当前单元</button>
+            </div>
+        </div>
+
+        <!-- 词汇模块 -->
+        <h2>Vocabulary 词汇</h2>
+        <div class="vocab-group">
+            <input type="text" class="vocab-input" id="newVocab" placeholder="输入单个词汇，点击添加">
+            <button id="addVocabBtn">添加词汇</button>
+        </div>
+        <div id="vocabList">
+            <span style="color: #999;">已添加的词汇会显示在这里...</span>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="vocabRepeat">单个词汇重复次数</label>
+                <input type="number" id="vocabRepeat" min="1" max="10" value="3">
+            </div>
+            <div class="control-group">
+                <label for="vocabPause">词汇间停顿时间(秒)</label>
+                <input type="number" id="vocabPause" min="1" max="10" value="5">
+            </div>
+        </div>
+
+        <!-- 段落模块 -->
+        <h2>Paragraph 段落/句子</h2>
+        <textarea id="paraInput" placeholder="输入段落或长句子..."></textarea>
+        <div class="controls">
+            <div class="control-group">
+                <label for="paraChar">每X字停顿</label>
+                <input type="number" id="paraChar" min="1" max="10" value="5">
+            </div>
+            <div class="control-group">
+                <label for="paraPause">停顿时间(秒)</label>
+                <input type="number" id="paraPause" min="1" max="10" value="5">
+            </div>
+            <div class="control-group">
+                <label for="paraRepeat">段落重复次数</label>
+                <input type="number" id="paraRepeat" min="1" max="5" value="2">
+            </div>
+        </div>
+
+        <!-- 语音选择 + 操作按钮 -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="voiceSelect">选择英文语音</label>
+                <select id="voiceSelect"></select>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="readVocabBtn">朗读词汇</button>
+            <button id="readParaBtn">朗读段落</button>
+            <button id="stopBtn">停止朗读</button>
+        </div>
+    </div>
+
+    <script>
+        // 初始化语音合成API
+        const synth = window.speechSynthesis;
+        const voiceSelect = document.getElementById('voiceSelect');
+        let voices = [];
+
+        // 本地存储相关 - 默书单元数据结构: { units: [{id: 'unit1', vocab: [], paragraph: ''}] }
+        let currentUnit = '';
+        let bookData = JSON.parse(localStorage.getItem('dictationBook')) || { units: [] };
+
+        // 获取英文语音列表
+        function loadVoices() {
+            voices = synth.getVoices();
+            voiceSelect.innerHTML = '';
+            voices.forEach(voice => {
+                if (voice.lang.includes('en')) {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    option.value = voice.name;
+                    voiceSelect.appendChild(option);
+                }
+            });
+            voiceSelect.selectedIndex = 0;
+        }
+        if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        // 渲染单元选择下拉框
+        function renderUnitSelect() {
+            const unitSelect = document.getElementById('unitSelect');
+            unitSelect.innerHTML = '<option value="">选择默书单元</option>';
+            bookData.units.forEach(unit => {
+                const option = document.createElement('option');
+                option.value = unit.id;
+                option.textContent = unit.id;
+                unitSelect.appendChild(option);
+            });
+            // 选中当前单元
+            unitSelect.value = currentUnit;
+        }
+
+        // 加载当前单元数据
+        function loadCurrentUnitData() {
+            if (!currentUnit) {
+                document.getElementById('vocabList').innerHTML = '<span style="color: #999;">请先选择或新增默书单元</span>';
+                document.getElementById('paraInput').value = '';
+                return;
+            }
+            const unit = bookData.units.find(u => u.id === currentUnit);
+            const vocabListEl = document.getElementById('vocabList');
+            // 渲染词汇
+            if (unit.vocab.length === 0) {
+                vocabListEl.innerHTML = '<span style="color: #999;">已添加的词汇会显示在这里...</span>';
+            } else {
+                vocabListEl.innerHTML = '';
+                unit.vocab.forEach(vocab => {
+                    const tag = document.createElement('div');
+                    tag.className = 'vocab-tag';
+                    tag.innerHTML = `<span>${vocab}</span><button onclick="removeVocab('${vocab}')">×</button>`;
+                    vocabListEl.appendChild(tag);
+                });
+            }
+            // 渲染段落
+            document.getElementById('paraInput').value = unit.paragraph || '';
+        }
+
+        // 保存当前单元数据到本地存储
+        function saveCurrentUnitData() {
+            if (!currentUnit) return;
+            const vocabList = Array.from(document.querySelectorAll('#vocabList .vocab-tag span')).map(el => el.textContent);
+            const paragraph = document.getElementById('paraInput').value.trim();
+            const unitIndex = bookData.units.findIndex(u => u.id === currentUnit);
+            if (unitIndex > -1) {
+                bookData.units[unitIndex].vocab = vocabList;
+                bookData.units[unitIndex].paragraph = paragraph;
+            }
+            localStorage.setItem('dictationBook', JSON.stringify(bookData));
+        }
+
+        // 新增单元
+        document.getElementById('addUnitBtn').addEventListener('click', () => {
+            const unitId = prompt('请输入新单元名称 (例如 Unit1)', `Unit${bookData.units.length + 1}`);
+            if (!unitId || bookData.units.some(u => u.id === unitId)) {
+                alert('单元名称不能为空或已存在');
+                return;
+            }
+            bookData.units.push({ id: unitId, vocab: [], paragraph: '' });
+            localStorage.setItem('dictationBook', JSON.stringify(bookData));
+            currentUnit = unitId;
+            renderUnitSelect();
+            loadCurrentUnitData();
+        });
+
+        // 删除当前单元
+        document.getElementById('deleteUnitBtn').addEventListener('click', () => {
+            if (!currentUnit) {
+                alert('请先选择要删除的单元');
+                return;
+            }
+            if (confirm(`确定删除单元 ${currentUnit} 吗？数据将无法恢复`)) {
+                bookData.units = bookData.units.filter(u => u.id !== currentUnit);
+                localStorage.setItem('dictationBook', JSON.stringify(bookData));
+                currentUnit = '';
+                renderUnitSelect();
+                loadCurrentUnitData();
+            }
+        });
+
+        // 切换单元
+        document.getElementById('unitSelect').addEventListener('change', (e) => {
+            // 先保存上一个单元的数据
+            saveCurrentUnitData();
+            currentUnit = e.target.value;
+            loadCurrentUnitData();
+        });
+
+        // 词汇添加
+        document.getElementById('addVocabBtn').addEventListener('click', () => {
+            if (!currentUnit) {
+                alert('请先选择或新增默书单元');
+                return;
+            }
+            const vocab = document.getElementById('newVocab').value.trim();
+            const vocabListEl = document.getElementById('vocabList');
+            if (!vocab || Array.from(vocabListEl.querySelectorAll('span')).some(el => el.textContent === vocab)) {
+                return;
+            }
+            // 清空提示文字
+            if (vocabListEl.innerHTML.includes('已添加的词汇会显示在这里')) {
+                vocabListEl.innerHTML = '';
+            }
+            const tag = document.createElement('div');
+            tag.className = 'vocab-tag';
+            tag.innerHTML = `<span>${vocab}</span><button onclick="removeVocab('${vocab}')">×</button>`;
+            vocabListEl.appendChild(tag);
+            document.getElementById('newVocab').value = '';
+            // 实时保存
+            saveCurrentUnitData();
+        });
+
+        // 词汇删除
+        window.removeVocab = function(vocab) {
+            const tags = document.querySelectorAll('#vocabList .vocab-tag');
+            tags.forEach(tag => {
+                if (tag.querySelector('span').textContent === vocab) tag.remove();
+            });
+            // 提示文字回显
+            if (document.querySelectorAll('#vocabList .vocab-tag').length === 0) {
+                document.getElementById('vocabList').innerHTML = '<span style="color: #999;">已添加的词汇会显示在这里...</span>';
+            }
+            saveCurrentUnitData();
+        };
+
+        // 延迟函数
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        // 朗读词汇逻辑
+        document.getElementById('readVocabBtn').addEventListener('click', async () => {
+            if (!currentUnit) {
+                alert('请先选择默书单元');
+                return;
+            }
+            const vocabTags = document.querySelectorAll('#vocabList .vocab-tag span');
+            if (vocabTags.length === 0) {
+                alert('请先添加词汇');
+                return;
+            }
+            const repeat = parseInt(document.getElementById('vocabRepeat').value);
+            const pause = parseInt(document.getElementById('vocabPause').value) * 1000;
+            const selectedVoice = voices.find(v => v.name === voiceSelect.value);
+            if (!selectedVoice) return;
+
+            synth.cancel();
+            const btn = document.getElementById('readVocabBtn');
+            btn.disabled = true;
+
+            for (const tag of vocabTags) {
+                const vocab = tag.textContent;
+                for (let i = 0; i < repeat; i++) {
+                    const utterance = new SpeechSynthesisUtterance(vocab);
+                    utterance.voice = selectedVoice;
+                    synth.speak(utterance);
+                    await new Promise(resolve => utterance.onend = resolve);
+                }
+                await delay(pause);
+            }
+            btn.disabled = false;
+        });
+
+        // 段落分割函数
+        function splitTextByChars(text, charCount) {
+            const chunks = [];
+            let current = '';
+            let len = 0;
+            for (const char of text) {
+                current += char;
+                len++;
+                if (len >= charCount) {
+                    chunks.push(current);
+                    current = '';
+                    len = 0;
+                }
+            }
+            if (current) chunks.push(current);
+            return chunks;
+        }
+
+        // 朗读段落逻辑
+        document.getElementById('readParaBtn').addEventListener('click', async () => {
+            if (!currentUnit) {
+                alert('请先选择默书单元');
+                return;
+            }
+            const text = document.getElementById('paraInput').value.trim();
+            if (!text) {
+                alert('请输入段落内容');
+                return;
+            }
+            const charCount = parseInt(document.getElementById('paraChar').value);
+            const pause = parseInt(document.getElementById('paraPause').value) * 1000;
+            const repeat = parseInt(document.getElementById('paraRepeat').value);
+            const selectedVoice = voices.find(v => v.name === voiceSelect.value);
+            if (!selectedVoice) return;
+
+            synth.cancel();
+            const btn = document.getElementById('readParaBtn');
+            btn.disabled = true;
+            const chunks = splitTextByChars(text, charCount);
+
+            for (let r = 0; r < repeat; r++) {
+                for (const chunk of chunks) {
+                    const utterance = new SpeechSynthesisUtterance(chunk);
+                    utterance.voice = selectedVoice;
+                    synth.speak(utterance);
+                    await new Promise(resolve => utterance.onend = resolve);
+                    await delay(pause);
+                }
+            }
+            btn.disabled = false;
+        });
+
+        // 停止朗读
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            synth.cancel();
+            document.getElementById('readVocabBtn').disabled = false;
+            document.getElementById('readParaBtn').disabled = false;
+        });
+
+        // 页面加载时渲染单元列表
+        renderUnitSelect();
+    </script>
+</body>
+</html>
