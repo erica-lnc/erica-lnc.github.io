@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>輕量積木 HTML 編輯器</title>
+    <script src="https://unpkg.com/blockly@11.1.0/blockly.min.js"></script>
+    <script src="https://unpkg.com/blockly@11.1.0/blocks/blocks.min.js"></script>
+    <script src="https://unpkg.com/blockly@11.1.0/msg/js/zh-hant.js"></script>
+    <script src="https://unpkg.com/blockly@11.1.0/javascript/javascript.min.js"></script>
+    <style>
+        * {margin: 0; padding: 0; box-sizing: border-box; font-family: 'Microsoft JhengHei', sans-serif;}
+        body {background: #f5f5f5; min-height: 100vh; display: flex; flex-direction: column;}
+        .header {background: #2563eb; color: #fff; padding: 0.8rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;}
+        .btn {padding: 0.4rem 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;}
+        .main {flex: 1; display: flex; flex-wrap: wrap; gap: 0.8rem; padding: 0.8rem;}
+        #toolbox {width: 220px; background: #fff; border-radius: 6px; padding: 0.5rem; flex-shrink: 0;}
+        #blocklyDiv {flex: 1; min-height: 400px; background: #fff; border-radius: 6px;}
+        .right {width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.8rem;}
+        .props, .preview {background: #fff; padding: 0.8rem; border-radius: 6px; flex: 1;}
+        .prop-item {margin: 0.5rem 0;}
+        .prop-item input {width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;}
+        #previewFrame {margin-top: 0.5rem; border: 1px solid #ddd; padding: 0.8rem; min-height: 150px; border-radius: 4px; background: #fafafa; overflow-y: auto;}
+        h4 {margin-bottom: 0.5rem; color: #333; border-bottom: 1px solid #eee; padding-bottom: 0.3rem;}
+        @media (max-width: 768px) {
+            .main {flex-direction: column;}
+            #toolbox, .right {width: 100%; max-height: 200px; overflow-y: auto;}
+            #blocklyDiv {min-height: 300px;}
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h3>積木 HTML 編輯器</h3>
+        <button class="btn" onclick="generateHtml()">生成程式碼</button>
+        <button class="btn" onclick="downloadHtml()">下載檔案</button>
+        <button class="btn" onclick="saveProject()">儲存專案</button>
+        <button class="btn" onclick="loadProject()">載入專案</button>
+        <button class="btn" onclick="clearWorkspace()">清空</button>
+    </div>
+    <div class="main">
+        <div id="toolbox"></div>
+        <div id="blocklyDiv"></div>
+        <div class="right">
+            <div class="props">
+                <h4>元素屬性</h4>
+                <div class="prop-item"><input id="elId" placeholder="元素ID"></div>
+                <div class="prop-item"><input id="elText" placeholder="顯示文字"></div>
+                <div class="prop-item"><input id="elStyle" placeholder="CSS樣式 ex: color:red"></div>
+                <button class="btn" onclick="applyProps()" style="width:100%">套用屬性</button>
+            </div>
+            <div class="preview">
+                <h4>即時預覽</h4>
+                <div id="previewFrame"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 工具箱配置 - 精簡核心積木
+        const toolboxXml = `
+<xml>
+  <category name="頁面結構" colour="#2563eb">
+    <block type="html_page"></block><block type="html_div"></block>
+  </category>
+  <category name="文字媒體" colour="#10b981">
+    <block type="html_h1"></block><block type="html_p"></block><block type="html_img"></block><block type="html_youtube"></block>
+  </category>
+  <category name="表單元素" colour="#ef4444">
+    <block type="html_input"></block><block type="html_button"></block>
+  </category>
+  <category name="佈局列表" colour="#4f46e5">
+    <block type="html_ul"></block><block type="html_table"></block>
+  </category>
+</xml>`;
+
+        // 註冊精簡積木
+        function registerBlocks() {
+            Blockly.defineBlocksWithJsonArray([
+                {type:"html_page",message0:"HTML頁面 %1 內容 %2",args0:[{type:"input_dummy"},{type:"input_statement",name:"CONTENT"}],output:"String",colour:30},
+                {type:"html_div",message0:"DIV容器 %1 文字 %2 樣式 %3",args0:[{type:"input_dummy"},{type:"input_value",name:"TEXT",value:{type:"text",fields:{TEXT:"內容"}}},{type:"input_value",name:"STYLE",value:{type:"text",fields:{TEXT:"padding:10px"}}}],output:"String",colour:30},
+                {type:"html_h1",message0:"標題H1 %1 文字 %2",args0:[{type:"input_dummy"},{type:"input_value",name:"TEXT",value:{type:"text",fields:{TEXT:"標題"}}}],output:"String",colour:60},
+                {type:"html_p",message0:"段落 %1 文字 %2",args0:[{type:"input_dummy"},{type:"input_value",name:"TEXT",value:{type:"text",fields:{TEXT:"段落內容"}}}],output:"String",colour:60},
+                {type:"html_img",message0:"圖片 %1 位址 %2",args0:[{type:"input_dummy"},{type:"input_value",name:"SRC",value:{type:"text",fields:{TEXT:"https://picsum.photos/200"}}}],output:"String",colour:90},
+                {type:"html_youtube",message0:"YouTube %1 影片ID %2",args0:[{type:"input_dummy"},{type:"input_value",name:"ID",value:{type:"text",fields:{TEXT:"dQw4w9WgXcQ"}}}],output:"String",colour:90},
+                {type:"html_input",message0:"輸入框 %1 提示 %2",args0:[{type:"input_dummy"},{type:"input_value",name:"PLACEHOLDER",value:{type:"text",fields:{TEXT:"請輸入"}}}],output:"String",colour:120},
+                {type:"html_button",message0:"按鈕 %1 文字 %2",args0:[{type:"input_dummy"},{type:"input_value",name:"TEXT",value:{type:"text",fields:{TEXT:"點擊"}}}],output:"String",colour:120},
+                {type:"html_ul",message0:"列表 %1 項目1 %2 項目2 %3",args0:[{type:"input_dummy"},{type:"input_value",name:"I1",value:{type:"text",fields:{TEXT:"項目1"}}},{type:"input_value",name:"I2",value:{type:"text",fields:{TEXT:"項目2"}}}],output:"String",colour:150},
+                {type:"html_table",message0:"表格 %1 內容 %2",args0:[{type:"input_dummy"},{type:"input_value",name:"TEXT",value:{type:"text",fields:{TEXT:"儲存格內容"}}}],output:"String",colour:150}
+            ]);
+        }
+
+        // 註冊程式碼生成器
+        function registerGenerator() {
+            const jg = Blockly.JavaScript;
+            jg.forBlock['html_page'] = b => [`<!DOCTYPE html><html><body>${jg.statementToCode(b,'CONTENT')}</body></html>`, jg.ORDER_ATOMIC];
+            jg.forBlock['html_div'] = b => `<div style="${jg.valueToCode(b,'STYLE').replace(/"/g,'')}">${jg.valueToCode(b,'TEXT').replace(/"/g,'')}</div>`;
+            jg.forBlock['html_h1'] = b => `<h1>${jg.valueToCode(b,'TEXT').replace(/"/g,'')}</h1>`;
+            jg.forBlock['html_p'] = b => `<p>${jg.valueToCode(b,'TEXT').replace(/"/g,'')}</p>`;
+            jg.forBlock['html_img'] = b => `<img src="${jg.valueToCode(b,'SRC').replace(/"/g,'')}" width="200">`;
+            jg.forBlock['html_youtube'] = b => `<iframe width="280" height="150" src="https://www.youtube.com/embed/${jg.valueToCode(b,'ID').replace(/"/g,'')}" frameborder="0"></iframe>`;
+            jg.forBlock['html_input'] = b => `<input type="text" placeholder="${jg.valueToCode(b,'PLACEHOLDER').replace(/"/g,'')}" style="width:100%;padding:8px">`;
+            jg.forBlock['html_button'] = b => `<button style="background:#2563eb;color:#fff;padding:8px;border:none;border-radius:4px">${jg.valueToCode(b,'TEXT').replace(/"/g,'')}</button>`;
+            jg.forBlock['html_ul'] = b => `<ul><li>${jg.valueToCode(b,'I1').replace(/"/g,'')}</li><li>${jg.valueToCode(b,'I2').replace(/"/g,'')}</li></ul>`;
+            jg.forBlock['html_table'] = b => `<table border="1" width="100%"><tr><td>${jg.valueToCode(b,'TEXT').replace(/"/g,'')}</td></tr></table>`;
+        }
+
+        // 核心功能
+        function generateHtml() {
+            document.getElementById('previewFrame').innerHTML = Blockly.JavaScript.workspaceToCode(workspace);
+        }
+        function downloadHtml() {
+            const blob = new Blob([Blockly.JavaScript.workspaceToCode(workspace)], {type: 'text/html'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = '積木網頁.html';
+            a.click();
+        }
+        function saveProject() {
+            localStorage.setItem('htmlBlockProj', Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace)));
+            alert('儲存成功！');
+        }
+        function loadProject() {
+            const xml = localStorage.getItem('htmlBlockProj');
+            xml ? Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(xml), workspace) : alert('無儲存專案！');
+        }
+        function clearWorkspace() {
+            if(confirm('確定清空？')) workspace.clear();
+        }
+        function applyProps() {
+            const b = workspace.getSelected();
+            if(!b) return alert('請選積木！');
+            if(b.getField('TEXT')) b.setFieldValue(document.getElementById('elText').value, 'TEXT');
+            if(b.getField('STYLE')) b.setFieldValue(document.getElementById('elStyle').value, 'STYLE');
+        }
+
+        // 初始化
+        const workspace = Blockly.inject('blocklyDiv', {
+            toolbox: Blockly.Xml.textToDom(toolboxXml),
+            zoom: {wheel: true},
+            trashcan: true,
+            grid: {snap: true}
+        });
+        registerBlocks();
+        registerGenerator();
+        window.addEventListener('resize', () => Blockly.svgResize(workspace));
+    </script>
+</body>
+</html>
