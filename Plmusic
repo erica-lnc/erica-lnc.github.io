@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>piglet music</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: sans-serif;
+        }
+        /* 设备适配：电脑端容器宽度限制 */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1)
+        }
+        /* 顶部绿色栏 */
+        .top-bar {
+            background-color: #2dce89;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+        .top-bar .pig-icon {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        .top-bar h1 {
+            font-size: 20px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        /* 搜索框 */
+        .search-box {
+            background-color: #2dce89;
+            padding: 0 20px 15px;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        /* 推荐音乐区域 */
+        .music-section {
+            padding: 20px;
+        }
+        .music-section h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-left: 3px solid #2dce89;
+            padding-left: 8px;
+        }
+        /* 歌曲列表表头 */
+        .song-header {
+            display: flex;
+            background-color: #e8f5e9;
+            padding: 8px 15px;
+            font-size: 14px;
+            color: #2dce89;
+            font-weight: bold;
+        }
+        .song-header .name-col {
+            flex: 1;
+        }
+        .song-header .singer-col {
+            flex: 1;
+            text-align: right;
+        }
+        /* 歌曲项 */
+        .song-item {
+            display: flex;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .song-item:hover {
+            background-color: #f8f8f8;
+        }
+        .song-item .name-col {
+            flex: 1;
+        }
+        .song-item .singer-col {
+            flex: 1;
+            text-align: right;
+            color: #666;
+        }
+        /* 底部播放栏 */
+        .player-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            padding: 10px 20px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            /* 电脑端限制宽度 */
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .player-bar .music-icon {
+            color: #2dce89;
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .player-bar .song-info {
+            flex: 1;
+            font-size: 14px;
+        }
+        .player-bar .song-info .no-song {
+            color: #999;
+        }
+        .player-bar .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .player-bar .controls button {
+            border: none;
+            background: none;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .player-bar .controls .play-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #2dce89;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 隐藏的音频元素 */
+        #audio-player {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部绿色栏 -->
+        <div class="top-bar">
+            <img src="https://img.icons8.com/fluency/48/000000/pig.png" class="pig-icon" alt="小猪图标">
+            <h1>piglet music</h1>
+        </div>
+
+        <!-- 搜索框 -->
+        <div class="search-box">
+            <input type="text" placeholder="搜索歌曲名...">
+        </div>
+
+        <!-- 推荐音乐区域 -->
+        <div class="music-section">
+            <h2>推薦音樂</h2>
+            <div class="song-header">
+                <div class="name-col">歌曲名</div>
+                <div class="singer-col">歌手</div>
+            </div>
+            <!-- 歌曲项（点击播放） -->
+            <div class="song-item" onclick="playSong('李柏黃河', '李柏')">
+                <div class="name-col">李柏黃河</div>
+                <div class="singer-col">李柏</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部播放栏 -->
+    <div class="player-bar">
+        <div class="music-icon">♫</div>
+        <div class="song-info">
+            <div id="current-song" class="no-song">未選擇歌曲</div>
+            <div id="current-singer">by 歌手</div>
+        </div>
+        <div class="controls">
+            <button class="prev-btn">◀</button>
+            <button class="play-btn" id="play-toggle">▶</button>
+            <button class="next-btn">▶</button>
+        </div>
+    </div>
+
+    <!-- 音频元素 -->
+    <audio id="audio-player" src="https://erica-lnc.github.io/PTT-20260116-WA0001.mp3"></audio>
+
+    <script>
+        const audio = document.getElementById('audio-player');
+        const playToggle = document.getElementById('play-toggle');
+        const currentSongEl = document.getElementById('current-song');
+        const currentSingerEl = document.getElementById('current-singer');
+        let isPlaying = false;
+
+        // 点击歌曲播放（同步歌手名）
+        function playSong(songName, singer) {
+            currentSongEl.textContent = songName;
+            currentSongEl.classList.remove('no-song');
+            currentSingerEl.textContent = `by ${singer}`;
+            audio.play();
+            isPlaying = true;
+            playToggle.textContent = '❙❙';
+        }
+
+        // 播放/暂停切换
+        playToggle.addEventListener('click', () => {
+            if (isPlaying) {
+                audio.pause();
+                playToggle.textContent = '▶';
+            } else {
+                audio.play();
+                playToggle.textContent = '❙❙';
+            }
+            isPlaying = !isPlaying;
+        });
+    </script>
+</body>
+</html>
