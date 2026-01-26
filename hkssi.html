@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>香港中学面试评分系统（纯前端版）</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", Arial, sans-serif; }
+    body { background: #f8f9fa; padding: 15px; line-height: 1.6; }
+    .container { max-width: 850px; margin: 0 auto; background: #fff; border-radius: 18px; box-shadow: 0 3px 15px rgba(0,0,0,0.06); padding: 22px; }
+    .header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+    .header h1 { color: #2563eb; font-size: 22px; margin-bottom: 6px; }
+    .header p { color: #666; font-size: 13px; }
+
+    /* 语言切换 */
+    .lang-switch { display: flex; justify-content: center; gap: 10px; margin-bottom: 18px; }
+    .lang-btn { padding: 7px 18px; border: 1px solid #ddd; border-radius: 100px; background: #fff; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+    .lang-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+    /* 标签页 */
+    .tab-nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+    .tab-btn { padding: 9px 20px; border: none; border-radius: 100px; background: #f1f5f9; color: #333; font-size: 14px; cursor: pointer; transition: all 0.3s; }
+    .tab-btn.active { background: #2563eb; color: #fff; }
+
+    /* 卡片样式 */
+    .card { background: #fefefe; border-radius: 14px; padding: 18px; margin-bottom: 18px; border: 1px solid #f1f1f1; }
+    .card h3 { color: #2563eb; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .card h3::before { content: ""; width: 3px; height: 14px; background: #2563eb; border-radius: 2px; }
+    .card .tip { color: #666; font-size: 13px; margin-bottom: 12px; }
+
+    /* 按钮组 */
+    .btn-group { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+    .btn { padding: 9px 18px; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-success { background: #10b981; color: #fff; }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+
+    /* 文本域/文章展示 */
+    .text-area { width: 100%; height: 110px; padding: 12px; border: 1px solid #eee; border-radius: 8px; font-size: 13px; resize: none; margin: 8px 0; background: #fff; }
+    .article-box { width: 100%; min-height: 90px; padding: 12px; border: 1px solid #eee; border-radius: 8px; font-size: 13px; background: #fff; margin: 8px 0; line-height: 1.7; color: #333; }
+
+    /* 分数展示 */
+    .score-card { text-align: center; padding: 18px; border-radius: 14px; background: linear-gradient(135deg, #eff6ff 0%, #f5faff 100%); margin: 12px 0; }
+    .score-num { font-size: 45px; font-weight: 700; color: #ef4444; margin: 8px 0; }
+    .score-desc { color: #666; font-size: 13px; line-height: 1.4; }
+
+    /* 状态提示 */
+    .status { font-size: 12px; margin-top: 8px; padding: 6px; border-radius: 4px; }
+    .status-success { color: #10b981; background: #f0fdf4; }
+    .status-loading { color: #2563eb; background: #eff6ff; }
+    .status-error { color: #ef4444; background: #fef2f2; }
+
+    /* 隐藏类 */
+    .hide { display: none !important; }
+
+    /* 响应式（手机适配） */
+    @media (max-width: 500px) {
+      .container { padding: 15px; }
+      .header h1 { font-size: 19px; }
+      .score-num { font-size: 32px; }
+      .tab-btn, .btn { padding: 7px 14px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 头部 -->
+    <div class="header">
+      <h1 id="title-cn">香港中学面试评分系统（纯前端版）</h1>
+      <h1 id="title-en" class="hide">HK Secondary School Interview Scoring (Frontend Only)</h1>
+      <p id="desc-cn">语音转文字·自我介绍打分·文章朗读纠错 | 中英粤支持</p>
+      <p id="desc-en" class="hide">Speech to Text·Self-Intro Scoring·Reading Correction | CN/EN/YUE</p>
+    </div>
+
+    <!-- 语言切换（中英独立） -->
+    <div class="lang-switch">
+      <button class="lang-btn active" id="lang-cn" onclick="switchLang('cn')">中文</button>
+      <button class="lang-btn" id="lang-en" onclick="switchLang('en')">English</button>
+    </div>
+
+    <!-- 标签页导航 -->
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tab-intro" onclick="switchTab('intro')" data-cn="自我介绍打分" data-en="Self-Intro Scoring"></button>
+      <button class="tab-btn" id="tab-article" onclick="switchTab('article')" data-cn="朗读文章纠错" data-en="Reading Correction"></button>
+    </div>
+
+    <!-- 自我介绍打分模块（核心） -->
+    <div id="content-intro">
+      <div class="card">
+        <h3 id="intro-title-cn">自我介绍语音录入</h3>
+        <h3 id="intro-title-en" class="hide">Self-Intro Speech Input</h3>
+        <p class="tip" id="intro-tip-cn">点击录制，说中学面试自我介绍（支持中/粤/英），停止后自动转文字+打分</p>
+        <p class="tip" id="intro-tip-en" class="hide">Click record, speak secondary school interview self-intro, auto text & score</p>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="start-intro" onclick="startRecord('intro')" data-cn="开始录制" data-en="Start Record"></button>
+          <button class="btn btn-danger" id="stop-intro" onclick="stopRecord('intro')" disabled data-cn="停止录制" data-en="Stop Record"></button>
+        </div>
+        <textarea class="text-area" id="intro-text" placeholder="录制的文字会显示在这里..."></textarea>
+        <div class="score-card">
+          <div id="score-title-cn">本次自我介绍得分</div>
+          <div id="score-title-en" class="hide">Self-Intro Score</div>
+          <div class="score-num" id="intro-score">0</div>
+          <div class="score-desc" id="intro-desc-cn">匹配关键词：<span id="intro-match">0</span> / 总关键词：<span id="intro-total-key">103</span></div>
+          <div class="score-desc" id="intro-desc-en" class="hide">Matched Keywords: <span id="intro-match-en">0</span> / Total: <span id="intro-total-key-en">103</span></div>
+        </div>
+        <div class="status" id="intro-status"></div>
+      </div>
+    </div>
+
+    <!-- 朗读文章纠错模块（中学适配） -->
+    <div id="content-article" class="hide">
+      <div class="card">
+        <h3 id="article-title-cn">随机获取朗读文章（中学版）</h3>
+        <h3 id="article-title-en" class="hide">Get Random Article (Secondary)</h3>
+        <p class="tip" id="article-tip-cn">获取文章后朗读，录制后自动对比纠错，按正确率打分（适合中学面试朗读环节）</p>
+        <p class="tip" id="article-tip-en" class="hide">Get article, read & record, auto correct and score (for interview reading)</p>
+        <div class="btn-group">
+          <button class="btn btn-success" id="get-article" onclick="getRandomArticle()" data-cn="获取随机文章" data-en="Get Random Article"></button>
+          <button class="btn btn-primary" id="start-article" onclick="startRecord('article')" disabled data-cn="开始朗读录制" data-en="Start Reading"></button>
+          <button class="btn btn-danger" id="stop-article" onclick="stopRecord('article')" disabled data-cn="停止录制" data-en="Stop Record"></button>
+        </div>
+        <div class="article-box" id="article-content">
+          <span id="article-empty-cn">请点击上方按钮获取随机文章</span>
+          <span id="article-empty-en" class="hide">Click button to get random article</span>
+        </div>
+        <div class="status" id="article-get-status"></div>
+      </div>
+      <div class="card">
+        <h3 id="read-title-cn">你的朗读文字</h3>
+        <h3 id="read-title-en" class="hide">Your Reading Text</h3>
+        <textarea class="text-area" id="article-text" placeholder="录制的朗读文字会显示在这里..."></textarea>
+        <div class="score-card">
+          <div id="read-score-title-cn">本次朗读纠错得分</div>
+          <div id="read-score-title-en" class="hide">Reading Correction Score</div>
+          <div class="score-num" id="article-score">0</div>
+          <div class="score-desc" id="article-desc-cn">错字/漏字：<span id="article-error">0</span> | 总字数：<span id="article-total-word">0</span> | 正确率：<span id="article-rate">0%</span></div>
+          <div class="score-desc" id="article-desc-en" class="hide">Errors: <span id="article-error-en">0</span> | Total Words: <span id="article-total-word-en">0</span> | Accuracy: <span id="article-rate-en">0%</span></div>
+        </div>
+        <div class="status" id="article-score-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 全局配置
+    const globalConfig = {
+      currentLang: 'cn',
+      currentTab: 'intro',
+      isRecording: false,
+      mediaRecorder: null,
+      currentArticle: null
+    };
+
+    // ========== 核心词库（中英独立拆分，各103个，适配中学面试） ==========
+    // 1. 中文词库（5大类，共103个，中学面试专用，难度适中）
+    const keywordDB_CN = [
+      // 1.性格特徵(21)
+      "開朗活潑","主動積極","熱情自信","具責任感","有毅力","面對困難","謙虛有禮","樂於助人","擅長團隊合作","具適應力",
+      "性格開朗","責任心強","堅持不懈","勇於面對困難","待人謙和","禮貌待人","熱心助人","團隊協作","適應能力強","積極向上","自信大方",
+      // 2.學業及專長(32)
+      "熱愛學習","主動求知","語文能力強","擅長思考","解難能力高","邏輯思維強","積極參與","課外活動","參與比賽","獲得獎項",
+      "比賽冠軍","比賽優異獎","自主學習","求知慾強","語言能力","邏輯能力","思維敏捷","解決問題","善於思考","學業優異",
+      "專長突出","能力過硬","積極參與活動","競賽獲獎","榮獲獎項","學習能力強","接受能力快","善於總結","歸納能力","分析能力","應變能力","學術能力",
+      // 3.興趣愛好(20)
+      "熱愛運動","游泳","籃球","足球","熱衷閱讀","享受音樂","鋼琴","小提琴","繪畫創作","編程設計",
+      "閱讀書籍","聽音樂","樂器演奏","美術創作","繪畫","程序設計","體育鍛煉","球類運動","藝術創作","數碼設計",
+      // 4.關鍵句型(20)
+      "您好","我是","畢業於","小學名稱","性格開朗且具責任感","學生","在學校","積極參與","活動","科目",
+      "特別擅長","特定能力","我希望","升上中學後","繼續發展","興趣","能力","學習更多新事物","謝謝老師","給我這次機會",
+      // 5.亮點加分(10，补足103个)
+      "時間管理能力強","平衡學業與活動","追求卓越","學習目標","熱衷探索","對知識的渴求","自我挑戰","不畏困難","時間管理","學業平衡"
+    ];
+
+    // 2. 英文词库（5大类，共103个，一对一对应中文，香港中学面试常用表达）
+    const keywordDB_EN = [
+      // 1.Personality(21)
+      "Cheerful and lively","Proactive and positive","Enthusiastic and confident","Responsible","Perseverant","Face difficulties","Humble and polite","Helpful","Good at teamwork","Adaptable",
+      "Cheerful personality","Strong sense of responsibility","Persistent","Dare to face difficulties","Humble to others","Polite","Warm-hearted","Team cooperation","Strong adaptability","Positive","Confident and easy-going",
+      // 2.Academic Ability(32)
+      "Love learning","Initiative to seek knowledge","Strong language skills","Good at thinking","High problem-solving ability","Strong logical thinking","Active participation","Extracurricular activities","Participate in competitions","Win awards",
+      "Competition champion","Merit award","Self-directed learning","Strong curiosity","Language ability","Logical ability","Quick thinking","Solve problems","Good at reflection","Excellent academic performance",
+      "Outstanding expertise","Strong ability","Active in activities","Win competition awards","Obtain awards","Strong learning ability","Quick acceptance","Good at summarizing","Inductive ability","Analytical ability","Adaptability","Academic ability",
+      // 3.Hobbies(20)
+      "Love sports","Swimming","Basketball","Football","Love reading","Enjoy music","Piano","Violin","Painting creation","Programming design",
+      "Read books","Listen to music","Musical instrument playing","Art creation","Painting","Programming","Physical exercise","Ball games","Art creation","Digital design",
+      // 4.Key Sentences(20)
+      "Hello","I am","Graduated from","Primary school name","Cheerful and responsible","Student","At school","Take an active part in","Activities","Subjects",
+      "Specialize in","Specific abilities","I hope","After entering middle school","Continue to develop","Hobbies","Abilities","Learn more new things","Thank you teacher","Give me this opportunity",
+      // 5.Highlight Bonus(10)
+      "Strong time management skills","Balance study and activities","Strive for excellence","Learning goals","Passion for exploration","Thirst for knowledge","Self-challenge","Dare to face difficulties","Time management","Study balance"
+    ];
+
+    // ========== 中学适配朗读文章库（中英各5篇，难度适中） ==========
+    const articleDB = {
+      cn: [
+        {title:"自我介绍模板1",content:"您好，我是小明，畢業於星光小學。我性格開朗活潑，待人謙虛有禮，平時樂於助人，也很擅長團隊合作。在學校我熱愛學習，主動求知，語文能力較強，還積極參與課外活動和比賽。我的興趣是閱讀和游泳，時間管理能力也不錯，能平衡好學業和興趣。希望升上中學後，能繼續提升自己，學習更多新事物，謝謝老師。"},
+        {title:"我的學校生活",content:"在小學的學習生活裡，我不僅認真學習課本知識，還積極參加各種課外活動。我擅長思考，解難能力不錯，遇到困難會堅持解決，不會輕易放棄。我曾獲得學校數學比賽優異獎，也喜歡和同學一起參加團體活動，在團隊中學會了互相幫助。"},
+        {title:"我的興趣愛好",content:"我有很多興趣愛好，最喜歡的是閱讀和籃球。閱讀能讓我學到更多知識，拓寬視野；打籃球可以鍛煉身體，還能培養團隊合作精神。閒暇時我也會彈鋼琴放鬆心情，偶爾還會嘗試繪畫創作，這些興趣讓我的生活變得很充實。"},
+        {title:"我的學習態度",content:"我是一個熱愛學習、主動求知的學生，遇到不懂的問題會主動請教老師和同學。我邏輯思維較強，擅長歸納總結知識點，也很注重時間管理，能平衡好學業和課外活動。我始終追求卓越，願意自我挑戰，不斷提升自己的能力。"},
+        {title:"升中期望",content:"我希望升上理想的中學後，能繼續保持積極向上的學習態度，努力學習各科知識，提升自己的語文和邏輯能力。同時我也想繼續參加課外活動和比賽，發展自己的興趣愛好，結交更多新朋友，一起進步，成為更好的自己。"}
+      ],
+      en: [
+        {title:"Self-Intro Template 1",content:"Hello, my name is Xiao Ming and I graduated from Starlight Primary School. I am cheerful and lively, humble and polite to others. I am always ready to help people and good at teamwork. At school, I love learning and actively seek knowledge with strong language skills. I also take part in extracurricular activities and competitions. My hobbies are reading and swimming. I have good time management skills and can balance study and hobbies. I hope to improve myself and learn more new things after entering middle school, thank you teachers."},
+        {title:"My School Life",content:"During my primary school life, I not only study textbook knowledge carefully but also take an active part in various extracurricular activities. I am good at thinking and solving problems. When I meet difficulties, I will stick to solving them and never give up easily. I once won a merit award in the school math competition. I also like to participate in group activities with classmates and learned to help each other in the team."},
+        {title:"My Hobbies",content:"I have many hobbies. My favorite are reading and playing basketball. Reading can help me learn more knowledge and broaden my horizons. Playing basketball can exercise my body and cultivate teamwork spirit. In my spare time, I also play the piano to relax and sometimes try painting creation. These hobbies make my life very fulfilling."},
+        {title:"My Learning Attitude",content:"I am a student who loves learning and actively seeks knowledge. When I meet problems I don't understand, I will ask teachers and classmates actively. I have strong logical thinking and am good at summarizing knowledge points. I also pay attention to time management and can balance study and extracurricular activities. I always strive for excellence, willing to challenge myself and improve my ability constantly."},
+        {title:"Expectation for Secondary School",content:"I hope that after entering my ideal secondary school, I can keep a positive learning attitude, study all subjects hard and improve my language and logical abilities. At the same time, I want to continue to participate in extracurricular activities and competitions, develop my hobbies, make more new friends, progress together and become a better version of myself."}
+      ]
+    };
+
+    // 页面初始化
+    window.onload = function() {
+      if (!localStorage.getItem('hkSchoolInterviewLang')) localStorage.setItem('hkSchoolInterviewLang', 'cn');
+      globalConfig.currentLang = localStorage.getItem('hkSchoolInterviewLang');
+      switchLang(globalConfig.currentLang);
+    };
+
+    // ========== 基础功能：语言切换/标签页切换 ==========
+    function switchLang(lang) {
+      globalConfig.currentLang = lang;
+      localStorage.setItem('hkSchoolInterviewLang', lang);
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`lang-${lang}`).classList.add('active');
+      
+      const allCn = document.querySelectorAll('[id$="-cn"]');
+      const allEn = document.querySelectorAll('[id$="-en"]');
+      allCn.forEach(el => el.classList.toggle('hide', lang === 'en'));
+      allEn.forEach(el => el.classList.toggle('hide', lang === 'cn'));
+
+      document.querySelectorAll('[data-cn]').forEach(btn => btn.textContent = btn.dataset[lang]);
+    }
+
+    function switchTab(tab) {
+      globalConfig.currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      document.getElementById('content-intro').classList.toggle('hide', tab === 'article');
+      document.getElementById('content-article').classList.toggle('hide', tab === 'intro');
+    }
+
+    // ========== 核心功能：语音转文字（浏览器原生，支持中英粤） ==========
+    function startRecord(type) {
+      const startBtn = document.getElementById(`start-${type}`);
+      const stopBtn = document.getElementById(`stop-${type}`);
+      const status = document.getElementById(`${type}-status`);
+      let speechLang = '';
+
+      // 语言适配：中文=粤语（香港中学常用），英文=英式英文
+      if (globalConfig.currentLang === 'cn') {
+        speechLang = 'zh-YUE'; // 粤语优先，适配香港
+      } else {
+        speechLang = 'en-GB'; // 英式英文，贴合香港学校
+      }
+
+      // 检测浏览器支持
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        showStatus(type, 'error', globalConfig.currentLang === 'cn' ? '请用Chrome/Edge浏览器（支持语音识别）' : 'Use Chrome/Edge (support speech recognition)');
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = speechLang;
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      // 识别结果回调
+      recognition.onresult = (e) => {
+        const text = Array.from(e.results).map(res => res[0].transcript).join('');
+        document.getElementById(`${type}-text`).value = text;
+        if (e.results[0].isFinal) {
+          stopRecord(type, true);
+          type === 'intro' ? scoreIntro(text) : scoreArticle(text);
+        }
+      };
+
+      // 识别错误
+      recognition.onerror = (e) => {
+        showStatus(type, 'error', globalConfig.currentLang === 'cn' ? `识别失败：${e.error}` : `Recognition Error: ${e.error}`);
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+      };
+
+      globalConfig.mediaRecorder = recognition;
+      recognition.start();
+      globalConfig.isRecording = true;
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      showStatus(type, 'loading', globalConfig.currentLang === 'cn' ? '正在录制，请说话...' : 'Recording, please speak...');
+    }
+
+    function stopRecord(type, isAuto = false) {
+      const startBtn = document.getElementById(`start-${type}`);
+      const stopBtn = document.getElementById(`stop-${type}`);
+      if (globalConfig.mediaRecorder && globalConfig.isRecording) {
+        globalConfig.mediaRecorder.stop();
+        globalConfig.isRecording = false;
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      if (!isAuto) {
+        showStatus(type, 'success', globalConfig.currentLang === 'cn' ? '录制已停止' : 'Recording stopped');
+        const text = document.getElementById(`${type}-text`).value;
+        if (text) type === 'intro' ? scoreIntro(text) : scoreArticle(text);
+      }
+    }
+
+    // ========== 核心功能：打分逻辑（中学适配） ==========
+    // 自我介绍打分：中英词库独立匹配，0-100分
+    function scoreIntro(text) {
+      const lang = globalConfig.currentLang;
+      const keywords = lang === 'cn' ? keywordDB_CN : keywordDB_EN;
+      let matchCount = 0;
+      const lowerText = text.toLowerCase().replace(/[^\w\s]/g, '');
+
+      // 匹配关键词
+      keywords.forEach(key => {
+        const cleanKey = key.toLowerCase().replace(/[^\w\s]/g, '');
+        if (lowerText.includes(cleanKey)) matchCount++;
+      });
+
+      // 计算分数（匹配度*100，取整）
+      const score = Math.round((matchCount / keywords.length) * 100);
+      document.getElementById('intro-score').textContent = score;
+      document.getElementById('intro-match').textContent = matchCount;
+      document.getElementById('intro-match-en').textContent = matchCount;
+      showStatus('intro', 'success', lang === 'cn' ? `打分完成！匹配${matchCount}个中学面试核心词` : `Scored! Matched ${matchCount} core keywords`);
+    }
+
+    // 朗读文章打分：逐字对比，0-100分
+    function scoreArticle(text) {
+      if (!globalConfig.currentArticle) {
+        showStatus('article', 'error', globalConfig.currentLang === 'cn' ? '请先获取随机文章' : 'Please get random article first');
+        return;
+      }
+
+      const articleContent = globalConfig.currentArticle.content;
+      const cleanText = text.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, '');
+      const cleanArticle = articleContent.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, '');
+      const totalWord = cleanArticle.length;
+      let errorCount = 0;
+
+      // 逐字对比（错字/漏字都算错）
+      for (let i = 0; i < totalWord; i++) {
+        if (cleanText[i] !== cleanArticle[i]) errorCount++;
+      }
+      if (cleanText.length > totalWord) errorCount += cleanText.length - totalWord;
+
+      // 计算分数
+      const accuracy = totalWord === 0 ? 100 : Math.max(0, Math.round(((totalWord - errorCount) / totalWord) * 100));
+      const score = accuracy;
+      // 更新页面
+      document.getElementById('article-score').textContent = score;
+      document.getElementById('article-error').textContent = errorCount;
+      document.getElementById('article-error-en').textContent = errorCount;
+      document.getElementById('article-total-word').textContent = totalWord;
+      document.getElementById('article-total-word-en').textContent = totalWord;
+      document.getElementById('article-rate').textContent = `${accuracy}%`;
+      document.getElementById('article-rate-en').textContent = `${accuracy}%`;
+      showStatus('article', 'success', globalConfig.currentLang === 'cn' ? `打分完成！正确率${accuracy}%` : `Scored! Accuracy ${accuracy}%`);
+    }
+
+    // ========== 辅助功能 ==========
+    // 随机获取中学朗读文章
+    function getRandomArticle() {
+      const lang = globalConfig.currentLang;
+      const articles = articleDB[lang];
+      const randomIndex = Math.floor(Math.random() * articles.length);
+      globalConfig.currentArticle = articles[randomIndex];
+      
+      document.getElementById('article-content').textContent = globalConfig.currentArticle.content;
+      document.getElementById('start-article').disabled = false;
+      // 清空历史数据
+      document.getElementById('article-text').value = '';
+      document.getElementById('article-score').textContent = 0;
+      document.getElementById('article-error').textContent = 0;
+      document.getElementById('article-error-en').textContent = 0;
+      document.getElementById('article-total-word').textContent = 0;
+      document.getElementById('article-total-word-en').textContent = 0;
+      document.getElementById('article-rate').textContent = '0%';
+      document.getElementById('article-rate-en').textContent = '0%';
+      document.getElementById('article-score-status').textContent = '';
+
+      showStatus('article-get', 'success', lang === 'cn' ? `已获取文章：${globalConfig.currentArticle.title}` : `Article: ${globalConfig.currentArticle.title}`);
+    }
+
+    // 状态提示封装
+    function showStatus(type, statusType, msg) {
+      const statusEl = document.getElementById(`${type}-status`);
+      statusEl.textContent = msg;
+      statusEl.className = 'status';
+      statusEl.classList.add(`status-${statusType}`);
+      if (statusType === 'error') setTimeout(() => statusEl.textContent = '', 3000);
+    }
+  </script>
+</body>
+</html>
