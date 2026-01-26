@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>香港中學面試評分系統 | 純前端離線版</title>
+  <title>香港中學面試評分系統 | 三語音識別版</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: "SimSun", "微軟正黑體", "細明體", Arial, sans-serif; }
     body { background: #f0f2f5; padding: 15px; line-height: 1.6; }
@@ -11,6 +11,12 @@
     .header { text-align: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
     .header h1 { color: #165DFF; font-size: 24px; margin-bottom: 8px; }
     .header p { color: #666; font-size: 14px; }
+    .lang-switch { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+    .lang-btn { padding: 8px 20px; border: 1px solid #ddd; border-radius: 100px; background: #fff; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+    .lang-btn.active { background: #165DFF; color: #fff; border-color: #165DFF; }
+    .speech-switch { display: flex; justify-content: center; gap: 8px; margin: 10px 0 20px; flex-wrap: wrap; }
+    .speech-btn { padding: 6px 16px; border: 1px solid #ddd; border-radius: 100px; background: #fff; cursor: pointer; font-size: 13px; transition: all 0.3s; }
+    .speech-btn.active { background: #00B42A; color: #fff; border-color: #00B42A; }
     .tab-nav { display: flex; justify-content: center; gap: 12px; margin-bottom: 25px; }
     .tab-btn { padding: 10px 22px; border: none; border-radius: 100px; background: #f5f7fa; color: #333; font-size: 15px; cursor: pointer; transition: all 0.3s; }
     .tab-btn.active { background: #165DFF; color: #fff; }
@@ -38,35 +44,72 @@
       .container { padding: 15px; }
       .header h1 { font-size: 20px; }
       .score-num { font-size: 36px; }
-      .tab-btn, .btn { padding: 8px 15px; font-size: 13px; }
+      .tab-btn, .btn, .lang-btn, .speech-btn { padding: 6px 12px; font-size: 12px; }
+      .speech-switch { gap: 5px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>香港中學面試評分系統 | 純前端離線版</h1>
-      <p>語音轉文字·繁體詞庫匹配打分·文章朗讀糾錯 | 支持粵語/普通話</p>
+      <h1 id="title-cn">香港中學面試評分系統 | 純前端離線版</h1>
+      <h1 id="title-en" class="hide">HK Secondary School Interview Scoring | Frontend Only</h1>
+      <p id="desc-cn">語音轉文字·雙語匹配打分·文章朗讀糾錯 | 自我介紹三語音可選</p>
+      <p id="desc-en" class="hide">Speech to Text·Bilingual Scoring·Reading Correction | 3 Speech Options</p>
+    </div>
+
+    <div class="lang-switch">
+      <button class="lang-btn active" id="lang-cn" onclick="switchLang('cn')">繁體中文</button>
+      <button class="lang-btn" id="lang-en" onclick="switchLang('en')">English</button>
     </div>
 
     <div class="tab-nav">
-      <button class="tab-btn active" id="tab-intro" onclick="switchTab('intro')">自我介紹打分</button>
-      <button class="tab-btn" id="tab-article" onclick="switchTab('article')">朗讀文章糾錯</button>
+      <button class="tab-btn active" id="tab-intro" onclick="switchTab('intro')">
+        <span id="tab-intro-cn">自我介紹打分</span>
+        <span id="tab-intro-en" class="hide">Self-Intro Scoring</span>
+      </button>
+      <button class="tab-btn" id="tab-article" onclick="switchTab('article')">
+        <span id="tab-article-cn">朗讀文章糾錯</span>
+        <span id="tab-article-en" class="hide">Reading Correction</span>
+      </button>
     </div>
 
     <div id="content-intro">
+      <div class="speech-switch" id="speech-switch-cn">
+        <button class="speech-btn active" id="speech-cantonese" onclick="switchSpeech('cantonese')">粵語</button>
+        <button class="speech-btn" id="speech-mandarin" onclick="switchSpeech('mandarin')">普通話</button>
+        <button class="speech-btn" id="speech-english" onclick="switchSpeech('english')">英文</button>
+      </div>
+      <div class="speech-switch hide" id="speech-switch-en">
+        <button class="speech-btn active" id="speech-cantonese-en" onclick="switchSpeech('cantonese')">Cantonese</button>
+        <button class="speech-btn" id="speech-mandarin-en" onclick="switchSpeech('mandarin')">Mandarin</button>
+        <button class="speech-btn" id="speech-english-en" onclick="switchSpeech('english')">English</button>
+      </div>
+
       <div class="card">
-        <h3>自我介紹語音錄入</h3>
-        <p class="tip">點擊錄製按鈕，說出你的自我介紹（支持粵語/普通話），停止後自動轉文字並打分</p>
+        <h3>
+          <span id="intro-title-cn">自我介紹語音錄入</span>
+          <span id="intro-title-en" class="hide">Self-Intro Speech Input</span>
+        </h3>
+        <p class="tip" id="intro-tip-cn">當前選擇：<span id="speech-tip-cn">粵語</span>，點擊錄製，停止後自動轉文字並打分</p>
+        <p class="tip" id="intro-tip-en" class="hide">Current: <span id="speech-tip-en">Cantonese</span>, click to record and auto score</p>
         <div class="btn-group">
-          <button class="btn btn-primary" id="start-intro" onclick="startRecord('intro')">開始錄製</button>
-          <button class="btn btn-danger" id="stop-intro" onclick="stopRecord('intro')" disabled>停止錄製</button>
+          <button class="btn btn-primary" id="start-intro" onclick="startRecord('intro')">
+            <span id="start-intro-cn">開始錄製</span>
+            <span id="start-intro-en" class="hide">Start Recording</span>
+          </button>
+          <button class="btn btn-danger" id="stop-intro" onclick="stopRecord('intro')" disabled>
+            <span id="stop-intro-cn">停止錄製</span>
+            <span id="stop-intro-en" class="hide">Stop Recording</span>
+          </button>
         </div>
         <textarea class="text-area" id="intro-text" placeholder="錄製的文字將顯示在這裡..."></textarea>
         <div class="score-card">
-          <div>本次自我介紹得分</div>
+          <div id="score-title-cn">本次自我介紹得分</div>
+          <div id="score-title-en" class="hide">Self-Intro Score</div>
           <div class="score-num" id="intro-score">0</div>
-          <div class="score-desc">匹配核心詞：<span id="intro-match">0</span> / 總核心詞：<span id="intro-total-key">103</span> | 匹配度：<span id="intro-rate">0%</span></div>
+          <div id="score-desc-cn" class="score-desc">匹配核心詞：<span id="intro-match-cn">0</span> / 總核心詞：<span id="intro-total-key">288</span> | 匹配度：<span id="intro-rate-cn">0%</span></div>
+          <div id="score-desc-en" class="score-desc hide">Matched Keywords: <span id="intro-match-en">0</span> / Total: <span id="intro-total-key-en">288</span> | Match Rate: <span id="intro-rate-en">0%</span></div>
         </div>
         <div class="status" id="intro-status"></div>
       </div>
@@ -74,23 +117,44 @@
 
     <div id="content-article" class="hide">
       <div class="card">
-        <h3>隨機獲取朗讀文章</h3>
-        <p class="tip">點擊獲取後隨機生成1篇文章，朗讀錄製後自動對比糾錯打分</p>
+        <h3>
+          <span id="article-title-cn">隨機獲取朗讀文章</span>
+          <span id="article-title-en" class="hide">Get Random Article</span>
+        </h3>
+        <p class="tip" id="article-tip-cn">點擊獲取後隨機生成1篇文章，朗讀錄製後自動對比糾錯打分</p>
+        <p class="tip" id="article-tip-en" class="hide">Click to get a random article, record and auto correct to score</p>
         <div class="btn-group">
-          <button class="btn btn-success" id="get-article" onclick="getRandomArticle()">獲取隨機文章</button>
-          <button class="btn btn-primary" id="start-article" onclick="startRecord('article')" disabled>開始朗讀錄製</button>
-          <button class="btn btn-danger" id="stop-article" onclick="stopRecord('article')" disabled>停止錄製</button>
+          <button class="btn btn-success" id="get-article" onclick="getRandomArticle()">
+            <span id="get-article-cn">獲取隨機文章</span>
+            <span id="get-article-en" class="hide">Get Random Article</span>
+          </button>
+          <button class="btn btn-primary" id="start-article" onclick="startRecord('article')" disabled>
+            <span id="start-article-cn">開始朗讀錄製</span>
+            <span id="start-article-en" class="hide">Start Recording</span>
+          </button>
+          <button class="btn btn-danger" id="stop-article" onclick="stopRecord('article')" disabled>
+            <span id="stop-article-cn">停止錄製</span>
+            <span id="stop-article-en" class="hide">Stop Recording</span>
+          </button>
         </div>
-        <div class="article-box" id="article-content">請點擊上方按鈕獲取隨機文章</div>
+        <div class="article-box" id="article-content">
+          <span id="article-empty-cn">請點擊上方按鈕獲取隨機文章</span>
+          <span id="article-empty-en" class="hide">Please click the button above to get a random article</span>
+        </div>
         <div class="status" id="article-get-status"></div>
       </div>
       <div class="card">
-        <h3>你的朗讀文字</h3>
+        <h3>
+          <span id="read-title-cn">你的朗讀文字</span>
+          <span id="read-title-en" class="hide">Your Reading Text</span>
+        </h3>
         <textarea class="text-area" id="article-text" placeholder="錄製的朗讀文字將顯示在這裡..."></textarea>
         <div class="score-card">
-          <div>本次朗讀糾錯得分</div>
+          <div id="read-score-title-cn">本次朗讀糾錯得分</div>
+          <div id="read-score-title-en" class="hide">Reading Correction Score</div>
           <div class="score-num" id="article-score">0</div>
-          <div class="score-desc">錯字/漏字：<span id="article-error">0</span> | 文章總字數：<span id="article-total-word">0</span> | 正確率：<span id="article-rate">0%</span></div>
+          <div id="article-desc-cn" class="score-desc">錯字/漏字：<span id="article-error-cn">0</span> | 文章總字數：<span id="article-total-word-cn">0</span> | 正確率：<span id="article-rate-cn">0%</span></div>
+          <div id="article-desc-en" class="score-desc hide">Errors/Missing: <span id="article-error-en">0</span> | Total Words: <span id="article-total-word-en">0</span> | Accuracy: <span id="article-rate-en">0%</span></div>
         </div>
         <div class="status" id="article-score-status"></div>
       </div>
@@ -99,45 +163,136 @@
 
   <script>
     const globalConfig = {
+      currentLang: 'cn',
       currentTab: 'intro',
+      currentSpeech: 'cantonese',
       isRecording: false,
       mediaRecorder: null,
       currentArticle: null
     };
 
-    // 核心詞庫：香港中學面試繁體中文103個（分類整合，去重精準）
-    const keywordDB = [
-      // 性格特徵描述
+    // 繁體中文核心詞庫 288個
+    const keywordDB_CN = [
       "開朗活潑", "主動積極", "熱情自信", "具責任感", "有毅力", "面對困難", "謙虛有禮", "樂於助人", "擅長團隊合作", "具適應力",
-      "性格開朗", "責任心強", "堅持不懈", "勇於面對困難", "待人謙和", "禮貌待人", "熱心助人", "團隊協作", "適應能力強", "積極向上", "自信大方",
-      // 學業及專長能力
-      "熱愛學習", "主動求知", "語文能力強", "擅長思考", "解難能力高", "邏輯思維強", "積極參與", "課外活動", "參與比賽", "獲得獎項",
-      "比賽冠軍", "比賽優異獎", "自主學習", "求知慾強", "語言能力", "邏輯能力", "思維敏捷", "解決問題", "善於思考", "學業優異",
-      "專長突出", "能力過硬", "積極參與活動", "競賽獲獎", "榮獲獎項", "學習能力強", "接受能力快", "善於總結", "歸納能力", "分析能力", "應變能力", "學術能力",
-      // 興趣愛好
-      "熱愛運動", "游泳", "籃球", "足球", "熱衷閱讀", "享受音樂", "鋼琴", "小提琴", "繪畫創作", "編程設計",
-      "閱讀書籍", "聽音樂", "樂器演奏", "美術創作", "繪畫", "程序設計", "體育鍛煉", "球類運動", "藝術創作", "數碼設計",
-      // 關鍵句型結構
-      "您好", "我是", "畢業於", "小學名稱", "性格開朗且具責任感", "學生", "在學校", "積極參與", "活動", "科目",
-      "特別擅長", "特定能力", "我希望", "升上中學後", "繼續發展", "興趣", "能力", "學習更多新事物", "謝謝老師", "給我這次機會",
-      // 亮點加分詞
-      "時間管理能力強", "平衡學業與活動", "追求卓越", "學習目標", "熱衷探索", "對知識的渴求", "自我挑戰", "不畏困難", "時間管理", "學業平衡", "探索新知", "勇於挑戰"
+      "性格開朗", "責任心強", "堅持不懈", "勇於面對困難", "待人謙和", "禮貌待人", "熱心助人", "團隊協作", "適應能力強", "積極向上",
+      "自信大方", "樂觀開朗", "堅強獨立", "積極進取", "永不言棄", "迎難而上", "沉穩冷靜", "頭腦清晰", "反應敏捷", "思維活躍",
+      "創新思維", "邏輯思維", "空間思維", "抽象思維", "形象思維", "逆向思維", "辯證思維", "批判性思維", "獨立思考", "善於思考",
+      "解難能力高", "解決問題", "分析問題", "發現問題", "提出方案", "執行能力強", "落實到位", "高效執行", "按時完成", "精益求精",
+      "追求卓越", "力求完美", "認真負責", "一絲不苟", "謹慎細心", "心思縝密", "注重細節", "細心謹慎", "大膽嘗試", "勇於創新",
+      "敢於挑戰", "勇於探索", "積極探索", "不斷學習", "勤學好問", "孜孜不倦", "持之以恆", "學而不厭", "博覽群書", "廣泛涉獵",
+      "熱愛學習", "主動求知", "求知慾強", "好學不倦", "勤奮刻苦", "埋頭苦幹", "兢兢業業", "踏實肯乾", "腳踏實地", "一步一個腳印",
+      "語文能力強", "文筆流暢", "表達清晰", "口齒伶俐", "善於溝通", "溝通能力強", "交際能力佳", "人際關係好", "善於傾聽", "樂於分享",
+      "敢於發言", "積極發言", "表達準確", "邏輯清晰", "條理分明", "層次清晰", "重點突出", "言簡意賅", "妙語連珠", "能言善辯",
+      "英語能力佳", "精通英語", "英語流利", "聽說讀寫佳", "雙語溝通", "多語言能力", "外語精通", "翻譯能力", "口譯能力", "筆譯能力",
+      "數學能力強", "邏輯推理", "計算精準", "空間想象", "數形結合", "解題思路活", "快速解題", "舉一反三", "觸類旁通", "融會貫通",
+      "科學素養高", "熱愛科學", "探索精神", "實驗能力", "觀察能力", "歸納總結", "演繹推理", "科學思維", "求真務實", "尊重事實",
+      "文學素養", "熱愛文學", "閱讀廣泛", "積累豐富", "鑑賞能力", "審美能力", "藝術細胞", "熱愛藝術", "音樂天賦", "繪畫才能",
+      "舞蹈特長", "戲劇表演", "書法造詣", "篆刻愛好", "剪紙技藝", "手工創作", "創意設計", "美術創作", "藝術創作", "數碼設計",
+      "體育特長", "熱愛運動", "堅持鍛煉", "身體素質好", "體能優異", "反應迅速", "動作協調", "游泳技術", "籃球水平", "足球技巧",
+      "羽毛球特長", "乒乓球擅長", "跑步速度快", "耐力持久", "爆發力強", "柔韌性好", "平衡力佳", "協調能力強", "運動天賦", "競爭意識",
+      "參與比賽", "獲得獎項", "比賽冠軍", "比賽優異獎", "一等獎", "二等獎", "三等獎", "優勝獎", "鼓勵獎", "金獎",
+      "銀獎", "銅獎", "殊榮", "嘉獎", "表揚", "認可", "肯定", "讚揚", "榮譽稱號", "模範學生",
+      "優秀學生", "三好生", "品學兼優", "德智體美勞", "全面發展", "綜合素質高", "素養全面", "特長突出", "專長明顯", "一技之長",
+      "自主學習", "自學能力強", "學習方法佳", "高效學習", "時間管理能力強", "合理安排時間", "規劃能力", "目標明確", "學習目標", "人生規劃",
+      "課外活動", "積極參與", "社團活動", "志願者服務", "公益活動", "義工服務", "社區實踐", "校園活動", "文藝活動", "體育活動",
+      "科技活動", "學術活動", "講座參與", "培訓學習", "交流訪問", "夏令營", "冬令營", "研學旅行", "戶外拓展", "團建活動",
+      "集體榮譽感", "愛護集體", "維護集體", "服從安排", "聽從指揮", "團結同學", "幫助同學", "關心他人", "體貼入微", "樂於奉獻",
+      "奉獻精神", "責任感強", "使命感", "敬業精神", "職業素養", "誠實守信", "誠實正直", "守信守諾", "言行一致", "表里如一",
+      "谦虚謹慎", "戒驕戒躁", "尊老愛幼", "禮義廉恥", "仁愛友善", "寬容大度", "心胸開闊", "與人為善", "和睦相處", "相親相愛",
+      "勤儉節約", "艱苦樸素", "艱苦奮鬥", "自強不息", "自食其力", "獨立自主", "自力更生", "迎難而上", "不畏艱險", "頑強拼搏",
+      "拼搏精神", "進取精神", "開拓精神", "創新精神", "探索精神", "實踐精神", "求實精神", "敬業精神", "奉獻精神", "犧牲精神",
+      "好奇心強", "愛好廣泛", "興趣濃厚", "專心致志", "一心一意", "專心專注", "持之以恆", "堅持不懈", "有始有終", "善始善終",
+      "雷厲風行", "乾淨利落", "認真負責", "盡職盡責", "任勞任怨", "無私奉獻", "默默付出", "甘於奉獻", "樂於助人", "雪中送炭",
+      "錦上添花", "急人所難", "解人之憂", "排人之難", "關心集體", "熱愛學校", "熱愛祖國", "熱愛家鄉", "家國情懷", "民族自豪感",
+      "國際視野", "全球思維", "開放包容", "與時俱進", "適應時代", "跟上潮流", "勇於接受新事物", "善於學習新知識", "掌握新技能", "提升自我",
+      "完善自我", "超越自我", "挑戰自我", "突破自我", "實現自我", "價值體現", "追求理想", "實現夢想", "奮發圖強", "努力拼搏",
+      "積極向上", "樂觀進取", "陽光開朗", "充滿活力", "朝氣蓬勃", "意氣風發", "精神抖擻", "神采奕奕", "滿面春風", "熱情洋溢",
+      "真誠友善", "坦率直爽", "開誠佈公", "與人為善", "寬宏大量", "心胸寬闊", "豁達大度", "從容淡定", "沉著冷靜", "處變不驚",
+      "臨危不亂", "應變能力強", "隨機應變", "靈活機動", "機智過人", "聰明伶俐", "天資聰穎", "過目不忘", "博聞強識", "見多識廣",
+      "知識淵博", "學識廣博", "才華橫溢", "多才多藝", "文武雙全", "德才兼備", "品學兼優", "德智雙馨", "全面發展", "綜合素質優秀"
     ];
 
-    // 朗讀文章庫：繁體中文5篇（香港中學面試場景适配）
-    const articleDB = [
-      { title: "香港簡介1", content: "香港是高度繁榮的國際大都會，位於珠江口東側，是世界著名的自由貿易港，也是國際金融、貿易、航運中心。香港中西文化交融，既有現代都市的繁華，也保留著傳統的文化習俗。" },
-      { title: "香港簡介2", content: "香港的經濟以服務業為主，金融、旅遊、貿易及物流是四大支柱產業。香港的教育制度完善，重視學生的綜合素質培養，鼓勵學生積極參與課外活動，全面發展。" },
-      { title: "面試禮儀1", content: "面試時應提前到達考場，保持衣著整潔，言行舉止禮貌得體。回答問題時要思路清晰，表達流暢，實事求是，避免誇大其詞，同時展現出自身的自信和對學校的熱情。" },
-      { title: "面試禮儀2", content: "自我介紹是面試的重要環節，應簡潔明瞭，突出個人優勢和與學校的匹配度，避免冗長無意義的表述。結束面試時，應向老師表示感謝，展現良好的禮貌和素養。" },
-      { title: "學習規劃", content: "升上中學後，我希望能繼續保持熱愛學習的態度，主動探索新知識，積極參與學校的各項活動，平衡好學業與興趣，努力提升自身的綜合能力，成為一名優秀的中學生。" }
+    // 英文核心詞庫 288個（與繁中一一對應）
+    const keywordDB_EN = [
+      "cheerful and lively", "proactive and positive", "enthusiastic and confident", "responsible", "perseverant", "face difficulties", "humble and polite", "helpful", "good at teamwork", "adaptable",
+      "outgoing personality", "strong sense of responsibility", "persistent", "dare to face difficulties", "humble to others", "polite", "warm-hearted", "team cooperation", "strong adaptability", "positive and uplifting",
+      "confident and easy-going", "optimistic and cheerful", "strong and independent", "aggressive and enterprising", "never give up", "face difficulties head-on", "calm and steady", "clear-minded", "quick response", "active thinking",
+      "innovative thinking", "logical thinking", "spatial thinking", "abstract thinking", "figurative thinking", "reverse thinking", "dialectical thinking", "critical thinking", "independent thinking", "good at thinking",
+      "high problem-solving ability", "solve problems", "analyze problems", "identify problems", "propose solutions", "strong execution ability", "implement in place", "efficient execution", "complete on time", "strive for perfection",
+      "strive for excellence", "seek perfection", "earnest and responsible", "meticulous", "cautious and careful", "thoughtful", "pay attention to details", "careful and prudent", "dare to try", "innovative",
+      "dare to challenge", "dare to explore", "actively explore", "keep learning", "diligent and inquisitive", "diligently", "persistent", "never tire of learning", "read extensively", "broad exposure",
+      "love learning", "initiative to seek knowledge", "strong curiosity", "eager to learn", "diligent and hardworking", "work hard", "dedicated", "practical and hardworking", "down-to-earth", "step by step",
+      "strong Chinese ability", "fluent writing", "clear expression", "eloquent", "good at communication", "strong communication skills", "good interpersonal skills", "good relationships", "good at listening", "willing to share",
+      "dare to speak", "speak actively", "accurate expression", "clear logic", "well-organized", "clear hierarchy", "highlight key points", "concise and to the point", "eloquent", "articulate and persuasive",
+      "good English ability", "proficient in English", "fluent in English", "good listening, speaking, reading and writing", "bilingual communication", "multilingual ability", "proficient in foreign languages", "translation ability", "interpretation ability", "translation writing ability",
+      "strong mathematical ability", "logical reasoning", "accurate calculation", "spatial imagination", "combination of numbers and shapes", "flexible problem-solving ideas", "solve problems quickly", "draw inferences from one instance", "comprehend by analogy", "synthesize and apply",
+      "high scientific literacy", "love science", "spirit of exploration", "experimental ability", "observation ability", "summarize and conclude", "deductive reasoning", "scientific thinking", "seeking truth from facts", "respect facts",
+      "literary accomplishment", "love literature", "extensive reading", "rich accumulation", "appreciation ability", "aesthetic ability", "artistic talent", "love art", "musical talent", "painting ability",
+      "dancing talent", "drama performance", "calligraphy attainments", "seal cutting hobby", "paper cutting skills", "handmade creation", "creative design", "art creation", "artistic creation", "digital design",
+      "sports specialty", "love sports", "keep exercising", "good physical quality", "excellent physical fitness", "quick response", "coordinated movements", "swimming skills", "basketball level", "football skills",
+      "badminton specialty", "good at table tennis", "fast running speed", "enduring stamina", "strong explosive power", "good flexibility", "good balance", "strong coordination ability", "sports talent", "sense of competition",
+      "participate in competitions", "win awards", "competition champion", "excellent competition award", "first prize", "second prize", "third prize", "excellence award", "encouragement award", "gold award",
+      "silver award", "bronze award", "honor", "commendation", "praise", "recognition", "affirmation", "compliment", "honorary title", "model student",
+      "excellent student", "three good student", "excellent character and academic performance", "moral, intellectual, physical, aesthetic and labor", "all-round development", "high comprehensive quality", "comprehensive literacy", "outstanding specialty", "obvious expertise", "professional skill",
+      "autonomous learning", "strong self-learning ability", "good learning methods", "efficient learning", "strong time management ability", "arrange time reasonably", "planning ability", "clear goals", "learning goals", "life planning",
+      "extracurricular activities", "active participation", "club activities", "volunteer service", "public welfare activities", "volunteer work", "community practice", "campus activities", "cultural and artistic activities", "sports activities",
+      "scientific and technological activities", "academic activities", "lecture participation", "training and learning", "exchange visits", "summer camp", "winter camp", "study tour", "outdoor development", "team building activities",
+      "collective sense of honor", "cherish the collective", "safeguard the collective", "obey arrangements", "obey orders", "unite classmates", "help classmates", "care for others", "thoughtful", "willing to dedicate",
+      "spirit of dedication", "strong sense of responsibility", "sense of mission", "professional dedication", "professional quality", "honest and trustworthy", "honest and upright", "keep promises", "match words with deeds", "be honest and upright",
+      "modest and prudent", "guard against arrogance and impetuosity", "respect the elderly and love the young", "propriety, justice, integrity and shame", "benevolent and friendly", "tolerant and generous", "open-minded", "be kind to others", "live in harmony", "love each other",
+      "diligent and thrifty", "hardworking and plain-living", "hard work", "self-improvement", "self-reliant", "independent", "self-reliance", "face difficulties head-on", "fear no hardships and dangers", "tenacious struggle",
+      "fighting spirit", "enterprising spirit", "pioneering spirit", "innovative spirit", "exploratory spirit", "practical spirit", "pragmatic spirit", "professional dedication", "spirit of dedication", "spirit of sacrifice",
+      "strong curiosity", "broad hobbies", "strong interest", "absorbed", "wholeheartedly", "concentrated", "persistent", "unremitting", "see things through", "finish what you start",
+      "resolute and decisive", "neat and tidy", "earnest and responsible", "dutiful", "hardworking and uncomplaining", "selfless dedication", "silent dedication", "willing to dedicate", "helpful", "provide timely help",
+      "add luster to something", "help others in need", "solve others' worries", "help others out of difficulties", "care for the collective", "love the school", "love the motherland", "love hometown", "national feelings", "national pride",
+      "international perspective", "global thinking", "open and inclusive", "keep pace with the times", "adapt to the times", "keep up with the trend", "dare to accept new things", "good at learning new knowledge", "master new skills", "improve oneself",
+      "perfect oneself", "surpass oneself", "challenge oneself", "break through oneself", "realize oneself", "value embodiment", "pursue ideals", "realize dreams", "work hard for prosperity", "strive hard",
+      "positive and upward", "optimistic and enterprising", "sunny and cheerful", "energetic", "vigorous and vibrant", "high-spirited", "in high spirits", "radiant with joy", "beaming with smiles", "full of enthusiasm",
+      "sincere and friendly", "frank and straightforward", "open and aboveboard", "be kind to others", "magnanimous", "open-minded", "forthright and generous", "calm and composed", "calm and cool-headed", "remain calm in the face of changes",
+      "calm in the face of danger", "strong adaptability", "improvise", "flexible and agile", "resourceful", "clever and bright", "naturally intelligent", "have a good memory", "erudite and knowledgeable", "well-informed",
+      "erudite", "extensive knowledge", "brilliant talent", "versatile", "accomplished in both literary and martial arts", "have both ability and political integrity", "excellent in character and academic performance", "have both moral and intellectual integrity", "all-round development", "excellent comprehensive quality"
     ];
 
-    window.onload = function() {
-      document.getElementById('intro-total-key').textContent = keywordDB.length;
+    const articleDB = {
+      cn: [
+        { title: "香港簡介1", content: "香港是高度繁榮的國際大都會，位於珠江口東側，是世界著名的自由貿易港，也是國際金融、貿易、航運中心。香港中西文化交融，既有現代都市的繁華，也保留著傳統的文化習俗。" },
+        { title: "香港簡介2", content: "香港的經濟以服務業為主，金融、旅遊、貿易及物流是四大支柱產業。香港的教育制度完善，重視學生的綜合素質培養，鼓勵學生積極參與課外活動，全面發展。" },
+        { title: "面試禮儀1", content: "面試時應提前到達考場，保持衣著整潔，言行舉止禮貌得體。回答問題時要思路清晰，表達流暢，實事求是，避免誇大其詞，同時展現出自身的自信和對學校的熱情。" },
+        { title: "面試禮儀2", content: "自我介紹是面試的重要環節，應簡潔明瞭，突出個人優勢和與學校的匹配度，避免冗長無意義的表述。結束面試時，應向老師表示感謝，展現良好的禮貌和素養。" },
+        { title: "學習規劃", content: "升上中學後，我希望能繼續保持熱愛學習的態度，主動探索新知識，積極參與學校的各項活動，平衡好學業與興趣，努力提升自身的綜合能力，成為一名優秀的中學生。" }
+      ],
+      en: [
+        { title: "Hong Kong Intro 1", content: "Hong Kong is a highly prosperous international metropolis, located on the east side of the Pearl River Estuary. It is a world-famous free trade port and an international center for finance, trade and shipping. Hong Kong blends Chinese and Western cultures, with the prosperity of a modern city and traditional cultural customs." },
+        { title: "Hong Kong Intro 2", content: "Hong Kong's economy is dominated by the service industry, with finance, tourism, trade and logistics as its four pillar industries. Hong Kong has a sound education system, which attaches importance to the cultivation of students' comprehensive quality and encourages them to take an active part in extracurricular activities for all-round development." },
+        { title: "Interview Etiquette 1", content: "You should arrive at the interview venue in advance, keep your clothes neat and behave politely. When answering questions, you need to have clear thinking and fluent expression, be realistic, avoid exaggeration, and show your confidence and enthusiasm for the school at the same time." },
+        { title: "Interview Etiquette 2", content: "Self-introduction is an important part of the interview. It should be concise and clear, highlighting personal advantages and matching with the school, avoiding lengthy and meaningless expressions. At the end of the interview, you should thank the teacher and show good manners and accomplishment." },
+        { title: "Study Plan", content: "After entering middle school, I hope to keep the attitude of loving learning, take the initiative to explore new knowledge, actively participate in various school activities, balance study and hobbies, strive to improve my comprehensive ability, and become an excellent middle school student." }
+      ]
     };
 
-    // 標籤頁切換
+    window.onload = function() {
+      setPlaceholders();
+      setSpeechTip();
+      document.getElementById('intro-total-key').textContent = keywordDB_CN.length;
+      document.getElementById('intro-total-key-en').textContent = keywordDB_EN.length;
+    };
+
+    function switchLang(lang) {
+      globalConfig.currentLang = lang;
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`lang-${lang}`).classList.add('active');
+      const allCn = document.querySelectorAll('[id$="-cn"]');
+      const allEn = document.querySelectorAll('[id$="-en"]');
+      allCn.forEach(el => el.classList.toggle('hide', lang === 'en'));
+      allEn.forEach(el => el.classList.toggle('hide', lang === 'cn'));
+      setPlaceholders();
+      setSpeechTip();
+      document.getElementById('intro-text').value = '';
+      document.getElementById('article-text').value = '';
+      document.getElementById('intro-status').textContent = '';
+      document.getElementById('article-score-status').textContent = '';
+    }
+
     function switchTab(tab) {
       globalConfig.currentTab = tab;
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -146,24 +301,62 @@
       document.getElementById('content-article').classList.toggle('hide', tab === 'intro');
     }
 
-    // 語音錄製與識別（Chrome/Edge原生API，支持粵語zh-YUE/普通話zh-CN）
+    function setPlaceholders() {
+      const lang = globalConfig.currentLang;
+      const introPH = lang === 'cn' ? '錄製的文字將顯示在這裡...' : 'Recorded text will be displayed here...';
+      const articlePH = lang === 'cn' ? '錄製的朗讀文字將顯示在這裡...' : 'Recorded reading text will be displayed here...';
+      document.getElementById('intro-text').placeholder = introPH;
+      document.getElementById('article-text').placeholder = articlePH;
+    }
+
+    function switchSpeech(speechType) {
+      globalConfig.currentSpeech = speechType;
+      document.querySelectorAll('.speech-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`speech-${speechType}`)?.classList.add('active');
+      document.getElementById(`speech-${speechType}-en`)?.classList.add('active');
+      setSpeechTip();
+    }
+
+    function setSpeechTip() {
+      const lang = globalConfig.currentLang;
+      const speech = globalConfig.currentSpeech;
+      const speechTipMap = {
+        cn: { cantonese: '粵語', mandarin: '普通話', english: '英文' },
+        en: { cantonese: 'Cantonese', mandarin: 'Mandarin', english: 'English' }
+      };
+      document.getElementById(`speech-tip-${lang}`).textContent = speechTipMap[lang][speech];
+    }
+
+    function getSpeechLangCode() {
+      const speech = globalConfig.currentSpeech;
+      const codeMap = { cantonese: 'zh-YUE', mandarin: 'zh-CN', english: 'en-US' };
+      return codeMap[speech];
+    }
+
     function startRecord(type) {
       const startBtn = document.getElementById(`start-${type}`);
       const stopBtn = document.getElementById(`stop-${type}`);
       const status = document.getElementById(`${type}-status`);
-      const speechLang = type === 'intro' ? 'zh-YUE' : 'zh-CN'; // 自我介紹默認粵語，朗讀默認普通話
+      const lang = globalConfig.currentLang;
+      let speechLang;
+      if (type === 'intro') {
+        speechLang = getSpeechLangCode();
+      } else {
+        speechLang = lang === 'cn' ? 'zh-CN' : 'en-US';
+      }
 
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        showStatus(type, 'error', '你的瀏覽器不支持語音識別，請使用Chrome/Edge');
+        const msg = lang === 'cn' ? '你的瀏覽器不支持語音識別，請使用Chrome/Edge' : 'Browser does not support Speech Recognition, use Chrome/Edge';
+        showStatus(type, 'error', msg);
         return;
       }
 
       const recognition = new SpeechRecognition();
       recognition.lang = speechLang;
-      recognition.continuous = false; // 關閉連續識別，避免無效語音干擾
-      recognition.interimResults = false; // 只返回最終識別結果
-      recognition.maxAlternatives = 1; // 只取最準確的識別結果
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
       recognition.onresult = (e) => {
         const text = e.results[0][0].transcript;
@@ -175,13 +368,10 @@
       };
 
       recognition.onerror = (e) => {
-        showStatus(type, 'error', `語音識別失敗：${e.error}`);
+        const msg = lang === 'cn' ? `語音識別失敗：${e.error}` : `Speech Recognition Error: ${e.error}`;
+        showStatus(type, 'error', msg);
         startBtn.disabled = false;
         stopBtn.disabled = true;
-      };
-
-      recognition.onend = () => {
-        if (globalConfig.isRecording) recognition.start();
       };
 
       globalConfig.mediaRecorder = recognition;
@@ -190,110 +380,160 @@
 
       startBtn.disabled = true;
       stopBtn.disabled = false;
-      showStatus(type, 'loading', '正在錄製，請說話...');
+      const loadingMsg = lang === 'cn' ? '正在錄製，請說話...' : 'Recording, please speak...';
+      showStatus(type, 'loading', loadingMsg);
     }
 
     function stopRecord(type, isAuto = false) {
       const startBtn = document.getElementById(`start-${type}`);
       const stopBtn = document.getElementById(`stop-${type}`);
+      const lang = globalConfig.currentLang;
+
       if (globalConfig.mediaRecorder && globalConfig.isRecording) {
         globalConfig.mediaRecorder.stop();
         globalConfig.isRecording = false;
       }
+
       startBtn.disabled = false;
       stopBtn.disabled = true;
       if (!isAuto) {
-        showStatus(type, 'success', '錄製已停止');
+        const stopMsg = lang === 'cn' ? '錄製已停止' : 'Recording stopped';
+        showStatus(type, 'success', stopMsg);
         const text = document.getElementById(`${type}-text`).value;
         if (text) type === 'intro' ? scoreIntro(text) : scoreArticle(text);
       }
     }
 
-    // 核心打分邏輯（BUG修復：精準匹配+文本預處理+去重）
     function scoreIntro(text) {
-      // 文本預處理：去空格/標點/換行，統一格式（修復無效字符干擾）
-      const cleanText = text.replace(/[^\u4e00-\u9fa5]/g, '').replace(/\s+/g, '');
+      const lang = globalConfig.currentLang;
+      const keywordDB = lang === 'cn' ? keywordDB_CN : keywordDB_EN;
+      const statusMsg = lang === 'cn' ? {
+        empty: '未識別到有效文字，請重新錄製',
+        success: (count) => `打分完成！精準匹配${count}個核心詞`
+      } : {
+        empty: 'No valid text recognized, please record again',
+        success: (count) => `Scored! Precisely matched ${count} core keywords`
+      };
+
+      let cleanText = text.trim();
+      if (lang === 'cn') {
+        cleanText = cleanText.replace(/[^\u4e00-\u9fa5]/g, '');
+      } else {
+        cleanText = cleanText.toLowerCase().replace(/[^\w\s]/g, '');
+      }
+
       if (!cleanText) {
-        showStatus('intro', 'error', '未識別到有效文字，請重新錄製');
-        document.getElementById('intro-score').textContent = 0;
-        document.getElementById('intro-match').textContent = 0;
-        document.getElementById('intro-rate').textContent = '0%';
+        showStatus('intro', 'error', statusMsg.empty);
+        resetIntroScore(lang);
         return;
       }
 
-      // 精準匹配：遍歷詞庫，完整匹配才計數，並去重（修復重複加分）
       const matchedSet = new Set();
       keywordDB.forEach(key => {
-        if (cleanText.includes(key)) {
-          matchedSet.add(key);
+        const keyClean = lang === 'en' ? key.toLowerCase() : key;
+        if (cleanText.includes(keyClean)) {
+          matchedSet.add(keyClean);
         }
       });
+
       const matchCount = matchedSet.size;
       const totalCount = keywordDB.length;
       const matchRate = ((matchCount / totalCount) * 100).toFixed(1);
-      const finalScore = matchCount === 0 ? 0 : Math.round((matchCount / totalCount) * 100); // 無匹配得0分
+      const finalScore = matchCount === 0 ? 0 : Math.round((matchCount / totalCount) * 100);
 
-      // 更新分數
       document.getElementById('intro-score').textContent = finalScore;
-      document.getElementById('intro-match').textContent = matchCount;
-      document.getElementById('intro-rate').textContent = `${matchRate}%`;
-      showStatus('intro', 'success', `打分完成！精準匹配${matchCount}個核心詞`);
+      document.getElementById(`intro-match-${lang}`).textContent = matchCount;
+      document.getElementById(`intro-rate-${lang}`).textContent = `${matchRate}%`;
+      showStatus('intro', 'success', statusMsg.success(matchCount));
     }
 
-    // 朗讀文章糾錯打分（逐字對比，精準計算錯字）
     function scoreArticle(text) {
+      const lang = globalConfig.currentLang;
       if (!globalConfig.currentArticle) {
-        showStatus('article-score', 'error', '請先獲取隨機文章');
+        const msg = lang === 'cn' ? '請先獲取隨機文章' : 'Please get a random article first';
+        showStatus('article-score', 'error', msg);
         return;
       }
-      const cleanText = text.replace(/[^\u4e00-\u9fa5]/g, '').replace(/\s+/g, '');
-      const cleanArticle = globalConfig.currentArticle.content.replace(/[^\u4e00-\u9fa5]/g, '').replace(/\s+/g, '');
-      const totalWord = cleanArticle.length;
-      if (totalWord === 0) {
-        showStatus('article-score', 'error', '文章無有效文字');
-        return;
+
+      const statusMsg = lang === 'cn' ? {
+        empty: '未識別到有效朗讀文字',
+        success: (rate) => `打分完成！正確率${rate}%`
+      } : {
+        empty: 'No valid reading text recognized',
+        success: (rate) => `Scored! Accuracy ${rate}%`
+      };
+
+      let cleanText = text.trim(), cleanArticle = globalConfig.currentArticle.content.trim();
+      if (lang === 'cn') {
+        cleanText = cleanText.replace(/[^\u4e00-\u9fa5]/g, '');
+        cleanArticle = cleanArticle.replace(/[^\u4e00-\u9fa5]/g, '');
+      } else {
+        cleanText = cleanText.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ');
+        cleanArticle = cleanArticle.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ');
       }
+
+      const totalWord = lang === 'cn' ? cleanArticle.length : cleanArticle.split(' ').filter(Boolean).length;
       if (!cleanText) {
-        showStatus('article-score', 'error', '未識別到有效朗讀文字');
-        document.getElementById('article-score').textContent = 0;
-        document.getElementById('article-error').textContent = 0;
-        document.getElementById('article-total-word').textContent = totalWord;
-        document.getElementById('article-rate').textContent = '0%';
+        showStatus('article-score', 'error', statusMsg.empty);
+        resetArticleScore(lang, totalWord);
         return;
       }
 
       let errorCount = 0;
-      for (let i = 0; i < totalWord; i++) {
-        if (cleanText[i] !== cleanArticle[i]) errorCount++;
+      if (lang === 'cn') {
+        for (let i = 0; i < cleanArticle.length; i++) {
+          if (cleanText[i] !== cleanArticle[i]) errorCount++;
+        }
+        if (cleanText.length > cleanArticle.length) errorCount += cleanText.length - cleanArticle.length;
+      } else {
+        const textArr = cleanText.split(' ').filter(Boolean);
+        const articleArr = cleanArticle.split(' ').filter(Boolean);
+        for (let i = 0; i < articleArr.length; i++) {
+          if (textArr[i] !== articleArr[i]) errorCount++;
+        }
+        if (textArr.length > articleArr.length) errorCount += textArr.length - articleArr.length;
       }
-      if (cleanText.length > totalWord) errorCount += cleanText.length - totalWord;
+
       const accuracy = Math.max(0, Math.round(((totalWord - errorCount) / totalWord) * 100));
       const accuracyRate = ((totalWord - errorCount) / totalWord * 100).toFixed(1);
 
       document.getElementById('article-score').textContent = accuracy;
-      document.getElementById('article-error').textContent = errorCount;
-      document.getElementById('article-total-word').textContent = totalWord;
-      document.getElementById('article-rate').textContent = `${accuracyRate}%`;
-      showStatus('article-score', 'success', `打分完成！正確率${accuracyRate}%`);
+      document.getElementById(`article-error-${lang}`).textContent = errorCount;
+      document.getElementById(`article-total-word-${lang}`).textContent = totalWord;
+      document.getElementById(`article-rate-${lang}`).textContent = `${accuracyRate}%`;
+      showStatus('article-score', 'success', statusMsg.success(accuracyRate));
     }
 
-    // 隨機獲取朗讀文章
     function getRandomArticle() {
-      const randomIndex = Math.floor(Math.random() * articleDB.length);
-      const randomArticle = articleDB[randomIndex];
+      const lang = globalConfig.currentLang;
+      const articles = articleDB[lang];
+      const randomIndex = Math.floor(Math.random() * articles.length);
+      const randomArticle = articles[randomIndex];
       globalConfig.currentArticle = randomArticle;
+
       document.getElementById('article-content').textContent = randomArticle.content;
       document.getElementById('start-article').disabled = false;
       document.getElementById('article-text').value = '';
-      document.getElementById('article-score').textContent = 0;
-      document.getElementById('article-error').textContent = 0;
-      document.getElementById('article-total-word').textContent = 0;
-      document.getElementById('article-rate').textContent = '0%';
+      resetArticleScore(lang, 0);
       document.getElementById('article-score-status').textContent = '';
-      showStatus('article-get', 'success', `已獲取文章：${randomArticle.title}`);
+
+      const msg = lang === 'cn' ? `已獲取文章：${randomArticle.title}` : `Article obtained: ${randomArticle.title}`;
+      showStatus('article-get', 'success', msg);
     }
 
-    // 狀態提示封裝
+    function resetIntroScore(lang) {
+      document.getElementById('intro-score').textContent = 0;
+      document.getElementById(`intro-match-${lang}`).textContent = 0;
+      document.getElementById(`intro-rate-${lang}`).textContent = '0%';
+    }
+
+    function resetArticleScore(lang, totalWord) {
+      document.getElementById('article-score').textContent = 0;
+      document.getElementById(`article-error-${lang}`).textContent = 0;
+      document.getElementById(`article-total-word-${lang}`).textContent = totalWord || 0;
+      document.getElementById(`article-rate-${lang}`).textContent = '0%';
+    }
+
     function showStatus(type, statusType, msg) {
       const statusEl = document.getElementById(`${type}-status`);
       statusEl.textContent = msg;
