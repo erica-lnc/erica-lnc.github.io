@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浏览器内存填充测试工具</title>
+    <style>
+        * {margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif;}
+        body {padding: 20px; max-width: 500px; margin: 0 auto; background: #f5f5f5;}
+        .container {background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);}
+        h1 {font-size: 20px; color: #333; margin-bottom: 20px; text-align: center;}
+        .config {margin: 20px 0;}
+        .config input {width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;}
+        .btn {width: 100%; padding: 12px; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; margin: 10px 0;}
+        #startBtn {background: #2196F3; color: white;}
+        #stopBtn {background: #f44336; color: white; display: none;}
+        #clearBtn {background: #9e9e9e; color: white;}
+        .status {margin: 20px 0; padding: 15px; border-radius: 5px; background: #f0f8ff; font-size: 16px;}
+        .record {margin: 15px 0; padding: 10px; background: #e8f5e9; border-radius: 5px; color: #2e7d32; font-weight: 500;}
+        .tip {margin-top: 20px; font-size: 14px; color: #666; line-height: 1.5;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>浏览器内存填充测试工具</h1>
+        <!-- 上次测试记录 -->
+        <div class="record" id="lastRecord"></div>
+        <!-- 配置项 -->
+        <div class="config">
+            <label>每次填充内存大小（MB）：默认20，建议10-50</label>
+            <input type="number" id="perSize" value="20" min="5" max="100">
+            <label>填充间隔（毫秒）：默认500，卡顿可调大</label>
+            <input type="number" id="interval" value="500" min="100" max="2000">
+        </div>
+        <!-- 操作按钮 -->
+        <button class="btn" id="startBtn">开始填充测试</button>
+        <button class="btn" id="stopBtn">停止填充</button>
+        <button class="btn" id="clearBtn">清除本地记录</button>
+        <!-- 实时状态 -->
+        <div class="status" id="status">状态：未开始 | 累计填充：0 MB</div>
+        <!-- 提示 -->
+        <div class="tip">
+            1. 闪退重启网页后，上方会显示上次填充总量<br>
+            2. 按F12打开【控制台(Console)】查看实时日志<br>
+            3. 测试中浏览器卡顿/闪退为正常现象<br>
+            4. 仅占用浏览器内存，不会影响手机系统存储
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const perSize = document.getElementById('perSize');
+        const interval = document.getElementById('interval');
+        const status = document.getElementById('status');
+        const lastRecord = document.getElementById('lastRecord');
+
+        // 全局变量
+        let fillTimer = null; // 填充定时器
+        let totalMB = 0;      // 累计填充MB
+        let isRunning = false;// 是否正在运行
+        const STORAGE_KEY = 'memFillTestRecord'; // 本地存储键名
+
+        // 初始化：读取上次测试记录
+        initRecord();
+        function initRecord() {
+            const lastData = localStorage.getItem(STORAGE_KEY);
+            if (lastData) {
+                lastRecord.innerHTML = `📌 上次测试记录：填充至 ${lastData} MB 时浏览器闪退`;
+            } else {
+                lastRecord.innerHTML = `📌 暂无测试记录，首次运行请点击开始`;
+            }
+        }
+
+        // 生成指定大小的大对象（占用内存）
+        function createBigData(mb) {
+            // 1MB = 1024*1024 字节，每个字符占2字节，所以1MB需要524288个字符
+            const mbToChar = mb * 524288;
+            let bigStr = '';
+            // 快速生成大字符串，占用内存
+            for (let i = 0; i < mbToChar; i++) {
+                bigStr += Math.random().toString(36).substring(2);
+            }
+            return bigStr;
+        }
+
+        // 打印日志（控制台+更新页面状态）
+        function log(msg) {
+            // 控制台日志（替代Logcat，按F12查看）
+            console.log(`[内存测试工具] ${new Date().toLocaleTimeString()} | ${msg}`);
+            // 更新页面状态
+            status.innerHTML = `状态：运行中 | ${msg}`;
+        }
+
+        // 单次填充操作
+        function fillOnce() {
+            const perMB = Number(perSize.value);
+            try {
+                // 创建大对象并保留（不销毁，持续占用内存）
+                window[`bigData_${Date.now()}`] = createBigData(perMB);
+                totalMB += perMB;
+                // 记录日志
+                const logMsg = `累计填充：${totalMB} MB（本次${perMB} MB）`;
+                log(logMsg);
+                // 临时保存当前值，防止中途闪退
+                localStorage.setItem(STORAGE_KEY, totalMB);
+            } catch (e) {
+                // 内存不足捕获异常，强制停止
+                log(`填充失败：内存不足 | 最终累计${totalMB} MB`);
+                stopFill();
+                alert(`浏览器内存不足！最终累计填充：${totalMB} MB`);
+            }
+        }
+
+        // 开始填充
+        function startFill() {
+            if (isRunning) return;
+            // 重置累计值
+            totalMB = 0;
+            localStorage.removeItem(STORAGE_KEY);
+            // 切换按钮状态
+            isRunning = true;
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+            // 循环填充
+            const fillInterval = Number(interval.value);
+            fillOnce(); // 立即执行一次
+            fillTimer = setInterval(fillOnce, fillInterval);
+            log('开始内存填充测试...');
+        }
+
+        // 停止填充
+        function stopFill() {
+            isRunning = false;
+            clearInterval(fillTimer);
+            // 切换按钮状态
+            startBtn.style.display = 'block';
+            stopBtn.style.display = 'none';
+            // 记录最终值（手动停止的情况）
+            if (totalMB > 0) {
+                localStorage.setItem(STORAGE_KEY, totalMB);
+                initRecord();
+                log(`手动停止填充 | 最终累计${totalMB} MB`);
+            }
+        }
+
+        // 清除本地记录
+        function clearRecord() {
+            localStorage.removeItem(STORAGE_KEY);
+            initRecord();
+            alert('本地测试记录已清除！');
+        }
+
+        // 绑定事件
+        startBtn.addEventListener('click', startFill);
+        stopBtn.addEventListener('click', stopFill);
+        clearBtn.addEventListener('click', clearRecord);
+
+        // 页面卸载时停止（防止内存泄漏）
+        window.addEventListener('beforeunload', () => {
+            if (isRunning) stopFill();
+        });
+    </script>
+</body>
+</html>
