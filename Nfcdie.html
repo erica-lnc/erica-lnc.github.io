@@ -1,59 +1,61 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>一键报废 NFC</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width=device-width, initial-scale=1.0">
+<title>无限暴力报废 NFC</title>
 <style>
-  body{text-align:center;padding:50px 20px;font-family:Arial;background:#111;color:#fff;}
-  #btn{padding:20px 40px;font-size:22px;background:#f33;border:none;border-radius:10px;color:white;cursor:pointer;}
-  #log{margin-top:30px;font-size:18px;min-height:60px;}
+body{background:#000;color:#fff;text-align:center;padding:60px 20px;font-family:Arial;}
+#btn{padding:30px 50px;font-size:26px;background:#f00;color:#fff;border:none;border-radius:15px;}
+#log{margin-top:40px;font-size:22px;min-height:70px;}
 </style>
 </head>
 <body>
 
-<h2>NFC 一键报废工具</h2>
-<button id="btn">一键报废 NFC 标签</button>
+<h1>💥 无限暴力报废 NFC</h1>
+<button id="btn">开始无限暴力写入</button>
 <div id="log">准备就绪</div>
 
 <script>
 const btn = document.getElementById('btn');
 const log = document.getElementById('log');
 
-btn.onclick = async () => {
-  try {
-    btn.disabled = true;
-    log.textContent = "请把 NFC 标签贴到手机背面";
+// 超大垃圾数据
+const junk = '00000000000000000000000000000000000000000000000000'
+           + '00000000000000000000000000000000000000000000000000'
+           + 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
 
+let count = 0;
+
+btn.onclick = async () => {
+  btn.disabled = true;
+  btn.textContent = '🔥 暴力写入中...';
+  log.textContent = '请贴上 NFC 标签！';
+
+  try {
     const ndef = new NDEFReader();
     await ndef.scan();
-    
-    ndef.onreadingerror = () => {
-      log.textContent = "标签读取失败，可能已报废";
-      btn.disabled = false;
-    };
 
     ndef.onreading = async () => {
-      try {
-        // 写入非法超长数据 → 直接写崩标签
-        await ndef.write({
-          records: [{
-            recordType: "text",
-            data: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-          }]
-        });
-        
-        log.textContent = "✅ 标签已报废，无法正常读写";
-      } catch (e) {
-        log.textContent = "⚠️ 写入失败，标签可能已报废";
-      } finally {
-        btn.disabled = false;
+      // 无限循环，写到死为止
+      while (true) {
+        try {
+          await ndef.write({
+            records: [{ recordType: "text", data: junk }]
+          });
+          count++;
+          log.textContent(`✅ 第 ${count} 次写入`);
+        } catch (e) {
+          log.textContent('💥 标签已报废 / 卡死 / 拒绝写入');
+          btn.textContent = '✅ 已报废';
+          return;
+        }
       }
     };
-
   } catch (e) {
-    log.textContent = "❌ 不支持NFC或未授权";
+    log.textContent('❌ 不支持 NFC 或未授权');
     btn.disabled = false;
+    btn.textContent = '开始无限暴力写入';
   }
 };
 </script>
