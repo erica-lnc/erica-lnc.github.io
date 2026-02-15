@@ -1,498 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFC 循环写入 · 2000亿次耐久测试</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-        body {
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(145deg, #0b1c2c 0%, #1a2f3f 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-        .card {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 2.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.6);
-            max-width: 600px;
-            width: 100%;
-            padding: 2rem 2rem 2.5rem;
-            color: #eef4fa;
-            transition: all 0.2s ease;
-        }
-        h1 {
-            font-size: 1.9rem;
-            font-weight: 500;
-            letter-spacing: -0.01em;
-            margin-top: 0.2rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        h1 span {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.2rem 1rem 0.2rem 1.2rem;
-            border-radius: 100px;
-            font-size: 1rem;
-            font-weight: 400;
-            color: #b4d0f0;
-            border: 1px solid #3a506b;
-        }
-        .status-panel {
-            background: #0f212e;
-            border-radius: 2rem;
-            padding: 1.8rem 1.8rem;
-            margin: 1.8rem 0 2rem;
-            border: 1px solid #2c4053;
-            box-shadow: inset 0 2px 5px #03080c;
-        }
-        .counter-main {
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .counter-label {
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            font-weight: 400;
-            letter-spacing: 1px;
-            color: #85a9cf;
-        }
-        .counter-value {
-            font-size: 3.8rem;
-            font-weight: 600;
-            line-height: 1;
-            font-variant-numeric: tabular-nums;
-            color: #d0eaff;
-            text-shadow: 0 0 5px #3f9eff;
-            word-break: break-word;
-        }
-        .batch-badge {
-            background: #1d4057;
-            border-radius: 100px;
-            padding: 0.4rem 1rem;
-            font-size: 1.1rem;
-            font-weight: 500;
-            display: inline-block;
-            border: 1px solid #3d7199;
-            color: #b6dcff;
-            margin-top: 0.5rem;
-        }
-        .message-box {
-            background: #0b1a24;
-            border-radius: 1.5rem;
-            padding: 1.2rem 1.5rem;
-            margin: 1.5rem 0 2rem;
-            border-left: 4px solid #2f80ed;
-            font-size: 1.1rem;
-            word-break: break-word;
-            box-shadow: 0 5px 0 #071017;
-        }
-        .btn {
-            background: #2f6a9b;
-            border: none;
-            border-radius: 3rem;
-            padding: 1.2rem 2rem;
-            font-size: 1.5rem;
-            font-weight: 550;
-            color: white;
-            width: 100%;
-            cursor: pointer;
-            transition: 0.15s;
-            box-shadow: 0 7px 0 #123456, 0 10px 20px rgba(0, 0, 0, 0.4);
-            border: 1px solid #4794d1;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        .btn:active {
-            transform: translateY(5px);
-            box-shadow: 0 2px 0 #0e2b40, 0 8px 15px rgba(0, 0, 0, 0.5);
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            transform: translateY(3px);
-            box-shadow: 0 4px 0 #0e2b40;
-            pointer-events: none;
-            filter: grayscale(0.5);
-        }
-        .warn {
-            color: #ffbaba;
-            background-color: #4f2d2d;
-            border-left-color: #e04f4f;
-        }
-        .success-tag {
-            color: #a3f0bf;
-        }
-        .footer-note {
-            font-size: 0.85rem;
-            color: #6f8fb2;
-            text-align: center;
-            margin-top: 2rem;
-            border-top: 1px dashed #2a445a;
-            padding-top: 1rem;
-        }
-        .flex-row {
-            display: flex;
-            gap: 0.8rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web NFC 循环写入</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #333;
+    }
+    .error {
+      color: red;
+    }
+  </style>
 </head>
 <body>
-    <div class="card" id="app">
-        <h1>
-            ⚡ 循环刷写机
-            <span>2000亿次</span>
-        </h1>
-        <div class="status-panel">
-            <div class="counter-main">
-                <span class="counter-label">当前写入次数</span>
-                <span class="counter-value" id="counterDisplay">0</span>
-            </div>
-            <div class="batch-badge" id="currentTextDisplay">
-                下一次写入: <span id="nextWriteValue">1</span>
-            </div>
-        </div>
+  <h1>Web NFC 循环写入测试</h1>
+  <button id="startButton">开始循环刷NFC</button>
+  <div class="status" id="status">请点击按钮开始</div>
 
-        <div class="message-box" id="messageBox">
-            <span id="messageText">💤 闲置中 · 点击下方按钮开始</span>
-        </div>
+  <script>
+    const startButton = document.getElementById('startButton');
+    const statusDiv = document.getElementById('status');
+    let loopCount = 0;
+    const maxLoops = 200000000000; // 2000亿次
 
-        <button class="btn" id="startBtn" aria-label="开始循环刷NFC">
-            <span>🏷️</span> 开始循环刷NFC
-        </button>
+    async function startNFC() {
+      if (!('NDEFReader' in window)) {
+        statusDiv.innerHTML = '<span class="error">您的设备或浏览器不支持 Web NFC</span>';
+        return;
+      }
 
-        <div class="footer-note">
-            Web NFC — 写入 1 → 2 → 1 → 2 …… 直至标签报废或20亿次<br>
-            (目标2000亿次，人类寿命内无法完成，仅演示循环)
-        </div>
-    </div>
+      const nfcReader = new NDEFReader();
 
-    <script>
-        (function() {
-            // --- 严格状态管理 ---
-            const NFC_MESSAGE_1 = "1";
-            const NFC_MESSAGE_2 = "2";
+      try {
+        statusDiv.textContent = '请贴上 NFC 标签...';
+        await nfcReader.scan(); // 开始扫描 NFC 标签
 
-            // 界面元素
-            const counterDisplay = document.getElementById('counterDisplay');
-            const messageText = document.getElementById('messageText');
-            const nextWriteSpan = document.getElementById('nextWriteValue');
-            const startBtn = document.getElementById('startBtn');
+        nfcReader.onreading = async () => {
+          try {
+            for (let i = 1; i <= maxLoops; i++) {
+              loopCount = i;
+              const message = (loopCount % 2 === 0) ? '2' : '1'; // 每次交替写入 "1" 和 "2"
+              await nfcReader.write({ records: [{ recordType: "text", data: message }] });
 
-            // 核心状态
-            let isWritingActive = false;          // 是否正在循环写入中
-            let currentCount = 0;                  // 已成功写入次数
-            let nextValue = NFC_MESSAGE_1;          // 下一次要写入的文本 ('1' 或 '2')
-            let nfcAbortController = null;          // 用于中止扫描
-            let报废标志 = false;                     // 一旦失败就永远阻止再次启动
-            let currentTagMounted = false;          // 辅助避免重复监听同一个标签 (保险)
+              // 更新界面显示当前写入次数
+              statusDiv.textContent = `已写入 ${loopCount} 次`;
 
-            // 目标循环次数 (2000亿)
-            const TARGET_LOOP = 200_000_000_000;    // 2000亿
-
-            // --- 更新界面 (次数/下一次内容/消息) ---
-            function refreshUI() {
-                counterDisplay.innerText = currentCount.toLocaleString();
-                nextWriteSpan.innerText = nextValue;
-
-                // 报废状态显示不同样式
-                const msgBox = document.getElementById('messageBox');
-                if (报废标志) {
-                    msgBox.classList.add('warn');
-                } else {
-                    msgBox.classList.remove('warn');
-                }
+              // 如果达到最大次数，停止
+              if (loopCount >= maxLoops) {
+                statusDiv.innerHTML = '<span class="status">已完成 2000 亿次写入！</span>';
+                return;
+              }
             }
+          } catch (error) {
+            console.error('写入失败:', error);
+            statusDiv.innerHTML = '<span class="error">标签已报废</span>';
+          }
+        };
+      } catch (error) {
+        console.error('NFC 初始化失败:', error);
+        statusDiv.innerHTML = '<span class="error">无法开启 NFC，可能是权限问题</span>';
+      }
+    }
 
-            // 显示普通消息 (不带报废样式)
-            function setMessage(msg, isError = false) {
-                messageText.innerText = msg;
-                if (isError) {
-                    document.getElementById('messageBox').classList.add('warn');
-                } else {
-                    document.getElementById('messageBox').classList.remove('warn');
-                }
-            }
-
-            // --- 报废处理：停止一切，显示标签已报废 ---
-            function handleTagBroken(optionalReason = '') {
-                if (报废标志) return; // 已经报废，忽略
-
-                // 停止所有NFC扫描
-                if (nfcAbortController) {
-                    try {
-                        nfcAbortController.abort();
-                    } catch (e) {}
-                    nfcAbortController = null;
-                }
-
-                isWritingActive = false;
-                报废标志 = true;
-                currentTagMounted = false;
-
-                // 界面更新
-                setMessage(`❌ 标签已报废 ${optionalReason ? '· ' + optionalReason : ''}`, true);
-                startBtn.disabled = false;   // 虽然禁用点击，但按钮仍然可点，但报废状态下点击会直接提示报废 (通过守卫)
-                refreshUI();
-            }
-
-            // --- 干净停止(不报废) 比如用户想要中止或者扫描结束，但这里我们不用, 停止扫描但保留状态(循环失败自动报废) ---
-            function stopScanning(reason = '') {
-                if (nfcAbortController) {
-                    nfcAbortController.abort();
-                    nfcAbortController = null;
-                }
-                isWritingActive = false;
-                currentTagMounted = false;
-                if (reason) {
-                    setMessage(reason);
-                }
-                startBtn.disabled = false;   // 按钮重新启用 (但如果报废标志为true, 点按钮会直接拒绝)
-                refreshUI();
-            }
-
-            // --- 核心写入函数：写入指定的文本，返回promise，失败则自动报废 ---
-            async function performWrite(ndefWriter, text) {
-                try {
-                    // 根据标准: 使用 "text/plain" 或空记录, 写入纯文本
-                    const encoder = new TextEncoder();
-                    const record = {
-                        recordType: "text",
-                        data: encoder.encode(text),
-                        encoding: "utf-8"
-                    };
-                    // 某些Android实现需要lang, 增加lang兼容
-                    // @ts-ignore (lang在Web NFC标准中是可选)
-                    record.lang = "en";
-
-                    await ndefWriter.write({ records: [record] });
-                    return true; // 写入成功
-                } catch (err) {
-                    console.warn('写入失败:', err);
-                    // 写入失败 => 标签报废 (停止一切)
-                    handleTagBroken(`写入失败 (${err.message || '未知错误'})`);
-                    return false; // 代表报废终止
-                }
-            }
-
-            // --- 开始监听NFC (挂载一个标签后连续写入) ---
-            async function startNfcScan() {
-                if (报废标志) {
-                    setMessage('⛔ 标签已报废，无法继续。刷新页面可重新尝试(需重新贴卡)', true);
-                    return;
-                }
-                if (!('NDEFReader' in window)) {
-                    setMessage('❌ 此浏览器不支持Web NFC。请使用Android Chrome或支持Web NFC的浏览器', true);
-                    return;
-                }
-
-                // 清理之前的扫描 (如有)
-                if (nfcAbortController) {
-                    nfcAbortController.abort();
-                    nfcAbortController = null;
-                }
-
-                // 重置一些动态标记
-                currentTagMounted = false;
-                isWritingActive = true;      // 进入激活状态 (但还没有标签)
-                startBtn.disabled = true;     // 禁用按钮，防止重复点击
-
-                setMessage('📱 请贴上NFC标签 (等待扫描...)');
-                refreshUI();
-
-                const abortController = new AbortController();
-                nfcAbortController = abortController;
-
-                try {
-                    // 创建扫描实例
-                    const reader = new NDEFReader();
-                    // 开始扫描 (主动扫描)
-                    await reader.scan({ signal: abortController.signal });
-                    setMessage('✅ 扫描已启动，请将NFC标签靠近设备背面');
-
-                    // 监听标签读取 (当标签靠近时触发)
-                    reader.addEventListener("reading", async (event) => {
-                        // 关键: 一旦读取到标签，立即开始写入循环
-                        // 但如果已经报废，忽略任何后续事件
-                        if (报废标志) {
-                            return;
-                        }
-
-                        // 防止重复进入 (如果已经挂载了一个标签并且在循环中，不再处理新标签)
-                        if (currentTagMounted) {
-                            setMessage('⚠️ 检测到新标签，但当前已有标签在处理中。请移开标签再试');
-                            return;
-                        }
-
-                        // 标记已挂载
-                        currentTagMounted = true;
-                        setMessage(`🔖 标签已识别，开始交替写入 1 → 2 ... 次数: ${currentCount}`);
-
-                        // 保存 event 中的 writer (用于后续写入)
-                        // 注意: 规范中NDEFReader的reading事件不带writer, 但可以从event中获取? 不标准。
-                        // 实际使用: NDEFReader 在scan之后, 利用 NDEFWriter 写入? 存在两种方式:
-                        // 方法1: 使用 NDEFWriter (单独的类) 推送消息到当前标签。但NDEFWriter.push()要求标签位于射频。
-                        // 更稳健: 使用 NDEFWriter 的 push 方法(已经不需要重新扫描) 但需要确保同一标签。
-                        // 但标准中，NDEFWriter 实例化后可以调用 write 或者 push。但是需要激活的标签。
-                        // 最佳实践: 在 reading 事件中，我们可以创建一个临时的 NDEFWriter 并写入。
-                        // 注意: NDEFWriter 要求标签靠近，但 reading 事件表明标签就在场，所以可以直接写。
-                        // 但为了防止竞争，使用短连接。
-                        // 我们使用瞬时writer: new NDEFWriter() 每次写入都新建也可以。
-                        // 但这里为了稳定, 用同一个 writer 也可以。 
-
-                        let writer;
-                        try {
-                            writer = new NDEFWriter();
-                        } catch (e) {
-                            handleTagBroken('无法创建NDEFWriter');
-                            return;
-                        }
-
-                        // ---- 进入写入循环 (直到失败或到达2000亿) ----
-                        while (isWritingActive && !报废标志 && currentCount < TARGET_LOOP) {
-                            // 写入 nextValue (1或者2)
-                            const writeContent = nextValue;
-                            const success = await performWrite(writer, writeContent);
-                            if (!success) {
-                                // performWrite 内部已经调用 handleTagBroken 并且返回false, 直接终止循环
-                                // 但以防万一，检查报废标志
-                                if (报废标志) {
-                                    setMessage('⚠️ 标签已报废，循环终止');
-                                }
-                                break; // 退出循环
-                            }
-
-                            // 写入成功, 更新计数器
-                            currentCount++;
-                            // 切换 nextValue (1 <-> 2)
-                            nextValue = (nextValue === NFC_MESSAGE_1) ? NFC_MESSAGE_2 : NFC_MESSAGE_1;
-
-                            // 刷新界面计数器 & 下一次显示
-                            refreshUI();
-                            setMessage(`✅ 成功写入 ${writeContent}  (总计 ${currentCount})`);
-
-                            // 如果达到2000亿, 显示成功 (但几乎不可能, 保留特性)
-                            if (currentCount >= TARGET_LOOP) {
-                                setMessage(`🎉 恭喜！已完成2000亿次写入 (理论上)`);
-                                isWritingActive = false;
-                                startBtn.disabled = false;
-                                currentTagMounted = false;
-                                if (nfcAbortController) {
-                                    nfcAbortController.abort();
-                                    nfcAbortController = null;
-                                }
-                                break;
-                            }
-
-                            // 轻微延迟，让标签有稳定时间，也避免过于凶猛导致卡顿。但不要用固定delay，靠事件驱动。
-                            // 为了更稳健，加入一个微小的间歇 (10ms) 让出事件循环，防止界面冻结。
-                            await new Promise(resolve => setTimeout(resolve, 10));
-                        }
-
-                        // 退出循环后，如果未报废但isWritingActive被设为false(比如外部停止), 则关闭扫描并重置按钮
-                        if (!报废标志) {
-                            // 正常退出(比如达到2000亿或者手动停止), 但手动停止未实现，保留被动退出条件。
-                            // 如果是因为达到目标退出, 已经处理。如果是其他原因, 停止扫描。
-                            if (currentCount >= TARGET_LOOP) {
-                                // 已处理
-                            } else {
-                                // 如果不是报废也不是完成，说明被外部标志停用，这时候停止扫描
-                                if (!isWritingActive) {
-                                    stopScanning('⏸️ 写入已暂停');
-                                }
-                            }
-                            currentTagMounted = false;
-                            startBtn.disabled = false;
-                        } else {
-                            // 已报废 按钮不可点? 按钮在handleTagBroken中已经设置了startBtn disabled = false，但我们希望不让点击，但报废标志会阻止重新启动
-                            // 所以按钮可点，但点击时会直接检测报废标志并提示。
-                        }
-
-                    }, { signal: abortController.signal });
-
-                    // 错误处理: 扫描错误 (通常是因为NFC不可用或被取消)
-                    reader.addEventListener("readingerror", (error) => {
-                        console.warn('NFC reading error:', error);
-                        if (!报废标志) {
-                            setMessage(`⚠️ 读取错误: 请重新贴标签`, false);
-                        }
-                    });
-
-                } catch (err) {
-                    // 扫描启动失败 (NFC关闭或权限)
-                    console.error('scan error', err);
-                    setMessage(`❌ 无法启动NFC扫描: ${err.message}`, true);
-                    isWritingActive = false;
-                    startBtn.disabled = false;
-                    nfcAbortController = null;
-                }
-            }
-
-            // --- 按钮点击处理 ---
-            async function onStartClick() {
-                // 如果已经报废，直接显示报废信息，不再启动
-                if (报废标志) {
-                    setMessage('🚫 标签已报废。请刷新页面重置 (重新加载后可用新标签)', true);
-                    return;
-                }
-
-                // 如果正在写入，也可以再次点击？我们允许重新启动，但会先中止之前的扫描
-                if (isWritingActive) {
-                    // 中止当前扫描, 重置标记
-                    if (nfcAbortController) {
-                        nfcAbortController.abort();
-                        nfcAbortController = null;
-                    }
-                    isWritingActive = false;
-                    currentTagMounted = false;
-                    setMessage('⏸️ 已停止之前的扫描，可重新开始');
-                    startBtn.disabled = false;  // 稍后又会enable, 但递归调用onStartClick会再次启动
-                    // 短暂延迟，让UI更新
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                }
-
-                // 重置次数? 根据需求“不要删除，不要空内容”，但用户刷新卡可能想重置计数？但业务没要求重置，我们保留累加。
-                // 但为了能够重新开始计数，允许从0开始？但逻辑上如果同一标签报废后不能继续。
-                // 我们保留继续累加计数 (除非报废刷新页面)。但也可以增加一个重置按钮，但需求无，所以保持当前计数。
-
-                // 启动扫描
-                await startNfcScan();
-            }
-
-            // 绑定点击
-            startBtn.addEventListener('click', onStartClick);
-
-            // 初始化界面
-            refreshUI();
-            setMessage('💤 点击下方按钮开始 · 目标2000亿次');
-
-            // 注意: 为了避免浏览器在后台或锁屏时异常，不处理。
-            // 完全符合: 一旦写入失败就停止并显示报废。
-            // 测试注意: 有些标签可能因保护而写入失败, 符合“标签已报废”
-            // 不能删除内容: 我们只写入1和2, 不执行删除操作。
-            // 纯HTML+Web NFC，无外部依赖。
-            // 循环2000亿次，界面显示数字理论上可以无限增加，但超出安全整数？JS最大安全整数约9e15，所以无问题。
-            // 性能: 实时显示, 每写一次更新一次。
-        })();
-    </script>
+    startButton.addEventListener('click', startNFC);
+  </script>
 </body>
 </html>
