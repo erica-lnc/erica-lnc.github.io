@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一键报废 NFC</title>
+<style>
+  body{text-align:center;padding:50px 20px;font-family:Arial;background:#111;color:#fff;}
+  #btn{padding:20px 40px;font-size:22px;background:#f33;border:none;border-radius:10px;color:white;cursor:pointer;}
+  #log{margin-top:30px;font-size:18px;min-height:60px;}
+</style>
+</head>
+<body>
+
+<h2>NFC 一键报废工具</h2>
+<button id="btn">一键报废 NFC 标签</button>
+<div id="log">准备就绪</div>
+
+<script>
+const btn = document.getElementById('btn');
+const log = document.getElementById('log');
+
+btn.onclick = async () => {
+  try {
+    btn.disabled = true;
+    log.textContent = "请把 NFC 标签贴到手机背面";
+
+    const ndef = new NDEFReader();
+    await ndef.scan();
+    
+    ndef.onreadingerror = () => {
+      log.textContent = "标签读取失败，可能已报废";
+      btn.disabled = false;
+    };
+
+    ndef.onreading = async () => {
+      try {
+        // 写入非法超长数据 → 直接写崩标签
+        await ndef.write({
+          records: [{
+            recordType: "text",
+            data: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+          }]
+        });
+        
+        log.textContent = "✅ 标签已报废，无法正常读写";
+      } catch (e) {
+        log.textContent = "⚠️ 写入失败，标签可能已报废";
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+  } catch (e) {
+    log.textContent = "❌ 不支持NFC或未授权";
+    btn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>
