@@ -2,18 +2,30 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width=device-width, initial-scale=1.0">
-<title>无限暴力报废 NFC</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>200亿次暴力报废NFC</title>
 <style>
-body{background:#000;color:#fff;text-align:center;padding:60px 20px;font-family:Arial;}
-#btn{padding:30px 50px;font-size:26px;background:#f00;color:#fff;border:none;border-radius:15px;}
-#log{margin-top:40px;font-size:22px;min-height:70px;}
+body{
+  background:#000; color:#fff;
+  text-align:center; padding:50px 20px;
+  font-family:Arial, sans-serif;
+}
+#btn{
+  padding:25px 50px; font-size:26px;
+  background:#f33; color:#fff;
+  border:none; border-radius:15px;
+  cursor:pointer;
+}
+#log{
+  margin-top:40px; font-size:22px;
+  min-height:60px;
+}
 </style>
 </head>
 <body>
 
-<h1>💥 无限暴力报废 NFC</h1>
-<button id="btn">开始无限暴力写入</button>
+<h1>💥 200 亿次暴力报废 NFC</h1>
+<button id="btn">开始 200 亿次循环写入</button>
 <div id="log">准备就绪</div>
 
 <script>
@@ -21,41 +33,45 @@ const btn = document.getElementById('btn');
 const log = document.getElementById('log');
 
 // 超大垃圾数据
-const junk = '00000000000000000000000000000000000000000000000000'
-           + '00000000000000000000000000000000000000000000000000'
-           + 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
+const junkData =
+  "00000000000000000000000000000000000000000000000000" +
+  "00000000000000000000000000000000000000000000000000" +
+  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 
+const TOTAL =20000000000; // 200 亿次
 let count = 0;
 
 btn.onclick = async () => {
   btn.disabled = true;
-  btn.textContent = '🔥 暴力写入中...';
-  log.textContent = '请贴上 NFC 标签！';
+  btn.textContent = "🔥 写入中...";
+  log.textContent = "请贴上 NFC 标签！";
 
   try {
     const ndef = new NDEFReader();
     await ndef.scan();
 
     ndef.onreading = async () => {
-      // 无限循环，写到死为止
-      while (true) {
+      while (count < TOTAL) {
         try {
           await ndef.write({
-            records: [{ recordType: "text", data: junk }]
+            records: [{ recordType: "text", data: junkData }]
           });
           count++;
-          log.textContent(`✅ 第 ${count} 次写入`);
+          log.textContent(`✅ 已写入：${count} / 200 亿次`);
         } catch (e) {
-          log.textContent('💥 标签已报废 / 卡死 / 拒绝写入');
-          btn.textContent = '✅ 已报废';
+          log.textContent("💥 标签已报废 / 无法写入");
+          btn.textContent = "✅ 已报废";
           return;
         }
       }
+      log.textContent("✅ 200 亿次写完！标签已报废");
+      btn.textContent = "完成";
     };
+
   } catch (e) {
-    log.textContent('❌ 不支持 NFC 或未授权');
+    log.textContent("❌ 不支持NFC或未授权");
     btn.disabled = false;
-    btn.textContent = '开始无限暴力写入';
+    btn.textContent = "开始 200 亿次循环写入";
   }
 };
 </script>
