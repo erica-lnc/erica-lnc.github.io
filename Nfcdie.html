@@ -1,80 +1,133 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>1↔2 狂刷 2000亿次 NFC</title>
-<style>
-body{
-  background:#000; color:#fff;
-  text-align:center; padding:40px 20px;
-  font-family:Arial,sans-serif;
-}
-#btn{
-  padding:25px 40px; font-size:24px;
-  background:#f00; color:#fff;
-  border:none; border-radius:14px;
-}
-#log{
-  margin-top:30px; font-size:20px;
-  min-height:60px;
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Web NFC 循环写入测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 2rem;
+      background: #f5f5f5;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 1.2rem;
+      margin: 1rem;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      color: #333;
+    }
+    #counter {
+      font-weight: bold;
+      color: #007bff;
+    }
+  </style>
 </head>
 <body>
+  <h1>Web NFC 循环写入测试</h1>
+  <button id="startBtn">开始循环刷NFC</button>
+  <div id="status">请先点击按钮开始</div>
+  <div>当前写入次数：<span id="counter">0</span></div>
 
-<h1>⚡ 1 ↔ 2 狂刷 2000 亿次</h1>
-<button id="btn">开始狂刷 NFC</button>
-<div id="log">准备就绪</div>
+  <script>
+    // 检查浏览器是否支持 Web NFC
+    if (!("NDEFReader" in window)) {
+      document.getElementById("status").textContent = "⚠️ 当前浏览器不支持 Web NFC";
+      document.getElementById("startBtn").disabled = true;
+    }
 
-<script>
-const btn = document.getElementById('btn');
-const log = document.getElementById('log');
+    const startBtn = document.getElementById("startBtn");
+    const statusEl = document.getElementById("status");
+    const counterEl = document.getElementById("counter");
 
-const MAX = 200000000000; // 2000 亿次
-let count = 0;
+    let writeCount = 0;
+    let isRunning = false;
+    const MAX_COUNT = 200_000_000_000; // 2000亿次
 
-btn.onclick = async () => {
-  btn.disabled = true;
-  btn.textContent = '🔥 狂刷中...';
-  log.textContent = '请贴上 NFC 标签';
+    async function writeToTag(text) {
+      try {
+        const writer = new NDEFWriter();
+        await writer.write(text);
+        return true;
+      } catch (error) {
+        console.error("写入失败:", error);
+        return false;
+      }
+    }
 
-  try {
-    const ndef = new NDEFReader();
-    await ndef.scan();
+    async function cycleWrite() {
+      if (writeCount >= MAX_COUNT) {
+        statusEl.textContent = "✅ 已完成全部写入任务！";
+        isRunning = false;
+        return;
+      }
 
-    ndef.onreading = async () => {
-      while (count < MAX) {
-        try {
-          // 第一次：写 1
-          await ndef.write({
-            records: [{ recordType: "text", data: "1" }]
-          });
-          count++;
-          log.textContent(`第 ${count} 次：写入 1`);
-
-          // 第二次：写 2
-          await ndef.write({
-            records: [{ recordType: "text", data: "2" }]
-          });
-          count++;
-          log.textContent(`第 ${count} 次：写入 2`);
-        } catch (e) {
-          log.textContent('💥 标签崩溃！任务结束');
-          btn.textContent = '✅ 已报废';
+      // 提示用户贴上标签（仅首次）
+      if (writeCount === 0) {
+        statusEl.textContent = "📌 请将 NFC 标签贴近设备...";
+        // 等待首次写入触发
+        const success1 = await writeToTag("1");
+        if (!success1) {
+          statusEl.textContent = "❌ 标签已报废";
+          isRunning = false;
           return;
         }
+        writeCount++;
+        counterEl.textContent = writeCount;
       }
-      log.textContent('✅ 2000亿次刷完！');
-      btn.textContent = '完成';
-    };
 
-  } catch (e) {
-    log.textContent('❌ 不支持NFC或未授权');
-    btn.disabled = false;
-    btn.textContent = '开始狂刷 NFC';
-  }
-};
-</script>
+      // 开始循环：交替写入 "1" 和 "2"
+      while (isRunning && writeCount < MAX_COUNT) {
+        const textToWrite = writeCount % 2 === 1 ? "2" : "1";
+
+        statusEl.textContent = `🔄 正在写入 "${textToWrite}"...（第 ${writeCount + 1} 次）`;
+
+        const success = await writeToTag(textToWrite);
+        if (!success) {
+          statusEl.textContent = "❌ 标签已报废";
+          isRunning = false;
+          return;
+        }
+
+        writeCount++;
+        counterEl.textContent = writeCount;
+
+        // 避免过快调用，防止浏览器卡顿
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      if (writeCount >= MAX_COUNT) {
+        statusEl.textContent = "✅ 已完成全部写入任务！";
+        isRunning = false;
+      }
+    }
+
+    startBtn.addEventListener("click", async () => {
+      if (isRunning) return;
+
+      // 请求 NFC 权限（通过尝试写入空内容）
+      try {
+        const testWriter = new NDEFWriter();
+        await testWriter.write({ records: [] });
+      } catch (err) {
+        statusEl.textContent = "❌ 无法访问 NFC，请检查权限或设备支持";
+        return;
+      }
+
+      writeCount = 0;
+      isRunning = true;
+      counterEl.textContent = "0";
+      startBtn.disabled = true;
+
+      cycleWrite().finally(() => {
+        startBtn.disabled = false;
+      });
+    });
+  </script>
 </body>
 </html>
