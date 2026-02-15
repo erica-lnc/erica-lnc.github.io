@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>2000亿次 写亿删亿 狂刷NFC</title>
+<title>1↔2 狂刷 2000亿次 NFC</title>
 <style>
 body{
   background:#000; color:#fff;
   text-align:center; padding:40px 20px;
-  font-family:Arial, sans-serif;
+  font-family:Arial,sans-serif;
 }
 #btn{
   padding:25px 40px; font-size:24px;
@@ -23,16 +23,15 @@ body{
 </head>
 <body>
 
-<h1>⚡ 2000 亿次 写亿+删亿 狂刷</h1>
-<button id="btn">开始狂刷 NFC 标签</button>
+<h1>⚡ 1 ↔ 2 狂刷 2000 亿次</h1>
+<button id="btn">开始狂刷 NFC</button>
 <div id="log">准备就绪</div>
 
 <script>
 const btn = document.getElementById('btn');
 const log = document.getElementById('log');
 
-// 2000 亿次
-const MAX = 200000000000;
+const MAX = 200000000000; // 2000 亿次
 let count = 0;
 
 btn.onclick = async () => {
@@ -47,32 +46,33 @@ btn.onclick = async () => {
     ndef.onreading = async () => {
       while (count < MAX) {
         try {
-          // 1. 写入「亿」
+          // 第一次：写 1
           await ndef.write({
-            records: [{ recordType: "text", data: "亿" }]
+            records: [{ recordType: "text", data: "1" }]
           });
           count++;
-          log.textContent(`✅ 第 ${count} 次：写入「亿」`);
+          log.textContent(`第 ${count} 次：写入 1`);
 
-          // 2. 删掉（写入空内容）
+          // 第二次：写 2
           await ndef.write({
-            records: [{ recordType: "text", data: "" }]
+            records: [{ recordType: "text", data: "2" }]
           });
-          log.textContent(`🗑️ 第 ${count} 次：已删除`);
+          count++;
+          log.textContent(`第 ${count} 次：写入 2`);
         } catch (e) {
-          log.textContent('💥 标签已经扛不住了！');
-          btn.textContent = '✅ 结束';
+          log.textContent('💥 标签崩溃！任务结束');
+          btn.textContent = '✅ 已报废';
           return;
         }
       }
-      log.textContent('✅ 2000 亿次完成！');
+      log.textContent('✅ 2000亿次刷完！');
       btn.textContent = '完成';
     };
 
   } catch (e) {
     log.textContent('❌ 不支持NFC或未授权');
     btn.disabled = false;
-    btn.textContent = '开始狂刷 NFC 标签';
+    btn.textContent = '开始狂刷 NFC';
   }
 };
 </script>
