@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>C - 管理员加密工具</title>
+<style>
+  body{max-width:400px;margin:30px auto}
+  div,input,button,textarea{width:100%;margin:8px 0;padding:10px}
+</style>
+
+<h3>管理员加密工具</h3>
+
+<div>
+  <h4>1. 生成【传输密文】（B左边）</h4>
+  <input id="sIn" placeholder="原文" value="123">
+  <button onclick="makeSend()">加密</button>
+  <textarea id="sOut" rows="2" readonly></textarea>
+</div>
+
+<div>
+  <h4>2. 生成【回传密文】（B右边）</h4>
+  <input id="bIn" placeholder="原文" value="567">
+  <button onclick="makeBack()">加密</button>
+  <textarea id="bOut" rows="2" readonly></textarea>
+</div>
+
+<script>
+// ==============================================
+// 🔒 【管理员专用】只能在这里改密钥（界面看不见）
+// ==============================================
+const SEND_KEY = "123456789.abc.bcd";
+const BACK_KEY = "987654321.cbd.abc";
+
+// ==============================================
+// 加密算法（和 A 完全一致）
+// ==============================================
+function xorEncrypt(str, key) {
+  let r = "";
+  for (let i=0; i<str.length; i++) {
+    const kc = key.charCodeAt(i % key.length);
+    const sc = str.charCodeAt(i);
+    r += String.fromCharCode(sc ^ kc);
+  }
+  return btoa(encodeURIComponent(r));
+}
+
+function makeSend() {
+  const t = document.getElementById("sIn").value;
+  document.getElementById("sOut").value = xorEncrypt(t, SEND_KEY);
+}
+
+function makeBack() {
+  const t = document.getElementById("bIn").value;
+  document.getElementById("bOut").value = xorEncrypt(t, BACK_KEY);
+}
+</script>
