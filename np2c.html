@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POST请求获取数据</title>
+<style>button{padding:8px 20px;font-size:16px;margin:10px;}textarea{width:95%;height:300px;margin:10px;font-size:14px;}</style>
+</head>
+<body>
+<button onclick="sendData()">点击获取数据</button>
+<div style="padding:0 10px;">结果：</div>
+<textarea id="result" placeholder="等待请求结果..."></textarea>
+
+<script>
+// 解决跨域+适配服务器表单验证
+async function sendData() {
+  const res = document.getElementById("result");
+  res.value = "正在请求...";
+  try {
+    const response = await fetch("https://www.np2c.edu.hk/2426s1interview/search.php", {
+      method: "POST",
+      mode: 'no-cors', // 绕过跨域限制
+      credentials: 'include',
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+        "Accept": "*/*",
+        "User-Agent": "Mozilla/5.0 (Mobile; Android 13) AppleWebKit/537.36"
+      },
+      body: "t=" + new Date().getTime() // 加随机参数，避免服务器缓存验证
+    });
+    // 无跨域时解析内容，有跨域时返回响应状态
+    if (response.ok) {
+      const data = await response.text();
+      res.value = data || "请求成功，服务器返回空内容";
+    } else {
+      res.value = `请求状态：${response.status} ${response.statusText}`;
+    }
+  } catch (err) {
+    res.value = "错误详情：" + err.message + "\n\n大概率是服务器跨域限制，试方案2";
+  }
+}
+</script>
+</body>
+</html>
