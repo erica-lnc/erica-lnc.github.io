@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title> 用户端</title>
+<style>
+  body{max-width:400px;margin:30px auto}
+  input,button,textarea{width:100%;margin:8px 0;padding:10px}
+</style>
+
+<h3>用户查询</h3>
+<input id="input" placeholder="输入内容" value="123">
+<button onclick="go()">查询</button>
+
+<h3>结果</h3>
+<textarea id="out" rows="8" readonly></textarea>
+
+<script>
+// ==============================================
+// 🔒 【管理员专用】只能在这里改密钥（界面看不见）
+// ==============================================
+const SEND_KEY = "123456789.abc.cbd";
+const BACK_KEY = "987654321.cbd.abc";
+
+// ==============================================
+// 📍 【管理员专用】在这里改 B.html 地址
+// ==============================================
+const B_URL = "ls.html";
+
+// ==============================================
+// 加密 / 解密（固定算法）
+// ==============================================
+function xorEncrypt(str, key) {
+  let r = "";
+  for (let i=0; i<str.length; i++) {
+    const kc = key.charCodeAt(i % key.length);
+    const sc = str.charCodeAt(i);
+    r += String.fromCharCode(sc ^ kc);
+  }
+  return btoa(encodeURIComponent(r));
+}
+
+function xorDecrypt(enc, key) {
+  try {
+    const d = decodeURIComponent(atob(enc));
+    let r = "";
+    for (let i=0; i<d.length; i++) {
+      const kc = key.charCodeAt(i % key.length);
+      const dc = d.charCodeAt(i);
+      r += String.fromCharCode(dc ^ kc);
+    }
+    return r;
+  } catch(e) {
+    return "解密失败";
+  }
+}
+
+// ==============================================
+// 查询逻辑
+// ==============================================
+async function go() {
+  const t = document.getElementById("input").value;
+  const out = document.getElementById("out");
+  out.value = "加密中...";
+
+  const enc = xorEncrypt(t, SEND_KEY);
+  out.value = "输入：" + t + "\n加密：" + enc + "\n\n读取 B 文件...";
+
+  try {
+    const res = await fetch(B_URL);
+    const txt = await res.text();
+    out.value += "\nB 内容：\n" + txt + "\n";
+
+    const reg = /"([^"]+)"\s*=\s*"([^"]+)"/g;
+    let m, ok = false;
+    while ((m = reg.exec(txt)) !== null) {
+      if (m[1] === enc) {
+        const final = xorDecrypt(m[2], BACK_KEY);
+        out.value += "\n✅ 结果：" + final;
+        ok = true;
+        break;
+      }
+    }
+    if (!ok) out.value += "\n❌ 无匹配";
+  } catch (e) {
+    out.value += "\n❌ 读取失败：" + e.message;
+  }
+}
+</script>
