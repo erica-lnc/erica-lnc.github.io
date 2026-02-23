@@ -1,32 +1,109 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title> 用户端</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>查询系统</title>
 <style>
-  body{max-width:400px;margin:30px auto}
-  input,button,textarea{width:100%;margin:8px 0;padding:10px}
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  body {
+    max-width: 480px;
+    margin: 40px auto;
+    padding: 0 20px;
+    background: #f5f7fa;
+  }
+
+  .card {
+    background: white;
+    padding: 30px 24px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  }
+
+  h3 {
+    font-size: 20px;
+    margin-bottom: 16px;
+    color: #111;
+  }
+
+  input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 16px;
+    margin-bottom: 12px;
+    outline: none;
+    transition: border 0.2s;
+  }
+
+  input:focus {
+    border-color: #007bff;
+  }
+
+  button {
+    width: 100%;
+    padding: 14px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  button:hover {
+    background: #0066dd;
+  }
+
+  .result-box {
+    margin-top: 24px;
+  }
+
+  textarea {
+    width: 100%;
+    padding: 16px;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    background: #fafbfc;
+    font-size: 16px;
+    resize: none;
+    outline: none;
+    min-height: 80px;
+  }
 </style>
 
-<h3>用户查询</h3>
-<input id="input" placeholder="输入内容" value="123">
-<button onclick="go()">查询</button>
+<div class="card">
+  <h3>查询</h3>
+  <input id="input" placeholder="输入内容" value="123">
+  <button onclick="go()">查询</button>
 
-<h3>结果</h3>
-<textarea id="out" rows="8" readonly></textarea>
+  <div class="result-box">
+    <h3>结果</h3>
+    <textarea id="out" readonly placeholder="等待查询..."></textarea>
+  </div>
+</div>
 
 <script>
 // ==============================================
-// 🔒 【管理员专用】只能在这里改密钥（界面看不见）
+// 🔒 管理员密钥（不动）
 // ==============================================
 const SEND_KEY = "123456789.abc.cbd";
 const BACK_KEY = "987654321.cbd.abc";
 
 // ==============================================
-// 📍 【管理员专用】在这里改 B.html 地址
+// 📍 B.html 地址（不动）
 // ==============================================
 const B_URL = "ls.html";
 
 // ==============================================
-// 加密 / 解密（固定算法）
+// 加密解密（完全不变）
 // ==============================================
 function xorEncrypt(str, key) {
   let r = "";
@@ -54,34 +131,31 @@ function xorDecrypt(enc, key) {
 }
 
 // ==============================================
-// 查询逻辑
+// 只显示最终结果
 // ==============================================
 async function go() {
   const t = document.getElementById("input").value;
   const out = document.getElementById("out");
-  out.value = "加密中...";
-
-  const enc = xorEncrypt(t, SEND_KEY);
-  out.value = "输入：" + t + "\n加密：" + enc + "\n\n读取 B 文件...";
+  out.value = "正在查询...";
 
   try {
+    const enc = xorEncrypt(t, SEND_KEY);
     const res = await fetch(B_URL);
     const txt = await res.text();
-    out.value += "\nB 内容：\n" + txt + "\n";
 
     const reg = /"([^"]+)"\s*=\s*"([^"]+)"/g;
-    let m, ok = false;
+    let m, result = "未找到匹配项";
+
     while ((m = reg.exec(txt)) !== null) {
       if (m[1] === enc) {
-        const final = xorDecrypt(m[2], BACK_KEY);
-        out.value += "\n✅ 结果：" + final;
-        ok = true;
+        result = xorDecrypt(m[2], BACK_KEY);
         break;
       }
     }
-    if (!ok) out.value += "\n❌ 无匹配";
+
+    out.value = result;
   } catch (e) {
-    out.value += "\n❌ 读取失败：" + e.message;
+    out.value = "查询失败";
   }
 }
 </script>
