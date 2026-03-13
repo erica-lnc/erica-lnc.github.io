@@ -3,168 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eSIM 安装器</title>
+    <title>eSIM 一键安装</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            font-family: Poppins, sans-serif;
         }
         body {
-            background: #0b1220;
-            color: #fff;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            background: #f8fafc;
             padding: 20px;
         }
-        .card {
-            background: #121a2f;
-            border-radius: 18px;
-            padding: 28px;
-            width: 100%;
-            max-width: 460px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-        }
-        h2 {
-            font-size: 22px;
-            color: #58d1ff;
-            margin-bottom: 6px;
-        }
-        .tip {
-            font-size: 13px;
-            color: #9aa7c2;
-            margin-bottom: 20px;
-        }
-        .mode {
+        .container {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(165deg, #d0edff, #ffffff, #d0edff);
+            padding: 40px 24px;
+            border: 1px solid #e5e5e5;
+            border-radius: 18px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
         }
-        .mode button {
-            flex: 1;
-            padding: 10px;
-            border-radius: 10px;
-            border: none;
-            background: #1e293b;
-            color: #cbd5e1;
+        h1 {
+            font-weight: 500;
+            font-size: 24px;
+            color: #202936;
+            margin-bottom: 24px;
+        }
+        .plan-details {
+            font-weight: 500;
             font-size: 14px;
-            cursor: pointer;
+            color: #202936;
+            margin-bottom: 32px;
         }
-        .mode button.active {
-            background: #38bdf8;
-            color: white;
-        }
-        .input-group {
-            margin-bottom: 14px;
-        }
-        label {
-            font-size: 13px;
-            color: #cbd5e1;
-            margin-bottom: 6px;
-            display: block;
-        }
-        input {
+        .install-esim {
             width: 100%;
-            padding: 12px 14px;
-            border-radius: 10px;
-            border: 1px solid #334155;
-            background: #0f172a;
-            color: white;
-            font-size: 15px;
-            outline: none;
-        }
-        input:focus {
-            border-color: #38bdf8;
-        }
-        #selfInputs, #lpaInputs {
-            display: none;
-        }
-        #selfInputs.active, #lpaInputs.active {
-            display: block;
-        }
-        button#generate {
-            width: 100%;
-            padding: 14px;
-            border-radius: 10px;
+            background-color: #202936;
+            border-radius: 8px;
+            padding: 12px 0;
+            margin-bottom: 28px;
             border: none;
-            background: linear-gradient(135deg, #38bdf8, #0284c7);
-            color: white;
+            outline: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .install-esim:hover {
+            background-color: #161e29;
+        }
+        .install-esim a {
+            color: #ffffff;
+            text-decoration: none;
             font-size: 16px;
             font-weight: 600;
-            cursor: pointer;
-            margin-top: 10px;
+        }
+        .qr-text {
+            font-size: 13px;
+            color: #64748b;
         }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>eSIM 安装器</h2>
-        <div class="tip">Edge 打开 → 直接跳转安装</div>
-
-        <div class="mode">
-            <button id="btnSelf" class="active">自己服务器</button>
-            <button id="btnLpa">共用 LPA</button>
-        </div>
-
-        <!-- 自己服务器：填 2 个 -->
-        <div id="selfInputs" class="active">
-            <div class="input-group">
-                <label>服务器地址</label>
-                <input type="text" id="selfServer" placeholder="xxx.pages.dev">
-            </div>
-            <div class="input-group">
-                <label>Profile 文件名</label>
-                <input type="text" id="selfFile" placeholder="xxx.profile">
-            </div>
-        </div>
-
-        <!-- 共用 LPA：填 1 个 -->
-        <div id="lpaInputs">
-            <div class="input-group">
-                <label>LPA 完整字符串</label>
-                <input type="text" id="lpaStr" placeholder="LPA:1$xxx$xxx">
-            </div>
-        </div>
-
-        <button id="generate">生成并跳转安装</button>
+    <div class="container">
+        <h1>Install your eSIM</h1>
+        <p class="plan-details">一键触发系统安装 | 小米国行专用</p>
+        <!-- 核心安装按钮：已替换你的专属链接，直接调用Google原生入口 -->
+        <button class="install-esim">
+            <a href="https://esimsetup.android.com/esim_qrcode_provisioning?carddata=LPA:1$mka.prod.ondemandconnectivity.com$RWFDX0HG4AOSY7KYTE1WJFPWFF">一键安装 eSIM</a>
+        </button>
+        <p class="qr-text">Edge浏览器打开 | 无需其他操作</p>
     </div>
-
-    <script>
-        const btnSelf = document.getElementById('btnSelf');
-        const btnLpa = document.getElementById('btnLpa');
-        const selfInputs = document.getElementById('selfInputs');
-        const lpaInputs = document.getElementById('lpaInputs');
-
-        btnSelf.onclick = () => {
-            btnSelf.classList.add('active');
-            btnLpa.classList.remove('active');
-            selfInputs.classList.add('active');
-            lpaInputs.classList.remove('active');
-        };
-        btnLpa.onclick = () => {
-            btnLpa.classList.add('active');
-            btnSelf.classList.remove('active');
-            lpaInputs.classList.add('active');
-            selfInputs.classList.remove('active');
-        };
-
-        document.getElementById('generate').onclick = () => {
-            let url;
-            if (btnSelf.classList.contains('active')) {
-                const s = document.getElementById('selfServer').value.trim();
-                const f = document.getElementById('selfFile').value.trim();
-                if (!s || !f) return alert('请填写完整');
-                url = `https://esimsetup.android.com/esim_qrcode_provisioning/?carddata=${s}$${f}`;
-            } else {
-                const lpa = document.getElementById('lpaStr').value.trim();
-                if (!lpa) return alert('请输入 LPA 字符串');
-                url = `https://esimsetup.android.com/esim_qrcode_provisioning/?carddata=${lpa}`;
-            }
-            location.href = url;
-        };
-    </script>
 </body>
 </html>
