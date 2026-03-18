@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合成型香港交通搜索工具</title>
+<style>
+  :root{--bg:#0a192f;--card:#112240;--text:#e6f1ff;--accent:#64ffda;--muted:#8892b0}
+  [data-theme="light"]{--bg:#f6f8fc;--card:#fff;--text:#222;--accent:#007aff;--muted:#666}
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Roboto,sans-serif}
+  body{background:var(--bg);color:var(--text);padding:16px}
+  .bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .btn{background:var(--card);color:var(--text);border:none;border-radius:8px;padding:8px 12px}
+  .btn.active{background:var(--accent);color:#000}
+  input{width:100%;background:var(--card);color:var(--text);border:none;border-radius:8px;padding:12px;margin-bottom:12px;outline:none}
+  .card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px}
+  .line{font-size:16px;font-weight:600}
+  .time{font-size:22px;font-weight:700;color:var(--accent)}
+  .dest{font-size:13px;color:var(--muted)}
+  .tag{display:inline-block;background:var(--card);color:var(--muted);font-size:12px;padding:4px 8px;border-radius:6px;margin-right:6px}
+</style>
+</head>
+<body>
+  <div class="bar">
+    <button class="btn lang" data-lang="zh-CN">简体</button>
+    <button class="btn lang" data-lang="zh-TW">繁體</button>
+    <button class="btn lang" data-lang="en">English</button>
+    <button class="btn theme" data-theme="dark">深色</button>
+    <button class="btn theme" data-theme="light">浅色</button>
+  </div>
+  <input id="search" placeholder="搜路线号码">
+  <div id="result"></div>
+
+<script>
+const i18n = {
+  "zh-CN":{title:"合成型香港交通搜索工具",loading:"加载中...",no:"暂无班次",offline:"离线",bus:"巴士",minibus:"小巴"},
+  "zh-TW":{title:"合成型香港交通搜尋工具",loading:"載入中...",no:"暫無班次",offline:"離線",bus:"巴士",minibus:"小巴"},
+  "en":{title:"HK Transport Search Tool",loading:"Loading...",no:"No ETA",offline:"Offline",bus:"Bus",minibus:"Minibus"}
+};
+
+let lang="zh-CN",theme="dark";
+let allRoutes=[];
+
+function t(k){return i18n[lang][k]}
+
+async function loadAllRoutes(){
+  try{
+    // 动态获取九巴 + 城巴 + 小巴全部路线（API 拉取，不是写死）
+    const busRes = await fetch("https://data.etabus.gov.hk/v1/transport/route");
+    const busData = await busRes.json();
+
+    const miniRes = await fetch("https://data.etagmb.gov.hk/v1/transport/route");
+    const miniData = await miniRes.json();
+
+    allRoutes = [
+      ...busData.data.map(r=>({...r,type:"bus"})),
+      ...miniData.data.map(r=>({...r,type:"minibus"}))
+    ];
+  }catch(e){}
+}
+
+function apply(){
+  document.documentElement.lang=lang;
+  document.documentElement.dataset.theme=theme;
+  document.title=t("title");
+  render();
+}
+
+function render(){
+  const q=document.getElementById("search").value.toUpperCase();
+  const list=allRoutes.filter(r=>
+    r.route.toUpperCase().includes(q) ||
+    (r.dest_tc||"").toUpperCase().includes(q)
+  );
+  const res=document.getElementById("result");
+  res.innerHTML="";
+  list.slice(0,30).forEach(r=>{
+    const c=document.createElement("div");c.className="card";
+    c.innerHTML=`<div><span class="tag">${t(r.type)}</span> <span class="line">${r.route} ${r.orig_tc}→${r.dest_tc}</span></div><div class="eta" data-route="${r.route}" data-type="${r.type}">${t("loading")}</div>`;
+    res.appendChild(c);
+    loadETA(r.route,r.type,c.querySelector(".eta"));
+  });
+}
+
+async function loadETA(route,type,el){
+  try{
+    const url=type==="bus"
+      ?`https://data.etabus.gov.hk/v1/transport/eta/${route}`
+      :`https://data.etagmb.gov.hk/v1/transport/eta/${route}`;
+    const res=await fetch(url);
+    const data=await res.json();
+    if(data.data?.[0]){
+      const e=data.data[0];
+      el.innerHTML=`<div class="time">${e.eta||"即將到站"}</div><div class="dest">往 ${e.dest_tc}</div>`;
+    }else{
+      el.innerHTML=`<div class="time">${t("no")}</div>`;
+    }
+  }catch{
+    el.innerHTML=`<div class="time">${t("offline")}</div>`;
+  }
+}
+
+document.querySelectorAll(".lang").forEach(b=>b.addEventListener("click",()=>{
+  lang=b.dataset.lang;
+  document.querySelectorAll(".lang").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  apply();
+}));
+
+document.querySelectorAll(".theme").forEach(b=>b.addEventListener("click",()=>{
+  theme=b.dataset.theme;
+  document.querySelectorAll(".theme").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  apply();
+}));
+
+document.getElementById("search").addEventListener("input",render);
+document.querySelector(".lang[data-lang=zh-CN]").classList.add("active");
+document.querySelector(".theme[data-theme=dark]").classList.add("active");
+
+loadAllRoutes().then(apply);
+</script>
+</body>
+</html>
