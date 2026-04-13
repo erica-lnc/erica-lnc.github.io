@@ -1,76 +1,67 @@
 <!DOCTYPE html>
-<meta charset="UTF-8">
-<title>Router Full Stress Test</title>
+<meta charset="utf-8">
+<title>路由死机级压测</title>
 <style>
-*{box-sizing:border-box}
-body{background:#000;color:#0f0;font-family:system-ui;padding:2rem}
-.warn{background:#500;color:#ff0;padding:1rem;border-radius:8px;font-weight:bold}
-#start{background:#a00;color:#fff;border:none;padding:1rem 2rem;font-size:1.2rem;cursor:pointer;margin:10px 0}
-#stop{background:#080;color:#fff;border:none;padding:1rem 2rem;font-size:1.2rem;cursor:pointer}
-#log{background:#000;border:1px solid #070;height:360px;overflow-y:auto;padding:1rem;font-size:12px;line-height:1.4}
+body{background:#000;color:#ff4444;padding:20px;font-family: monospace}
+.warn{background:#300;color:#ff0;padding:10px;border-radius:6px}
+#log{background:#111;color:#0f0;height:300px;overflow-y:auto;padding:10px;margin-top:10px}
+button{padding:12px 24px;font-size:16px;margin:5px}
+#start{background:#a00;color:#fff}
+#stop{background:#0a0;color:#fff}
 </style>
 
 <div class="warn">
-⚠️ 上传到服务器后运行<br>
-⚠️ 会大量并发连接，路由器 CPU 满载、变橙灯、可能死机<br>
-⚠️ 仅用于自家网络测试
+⚠️ 此页面会创建数千并发请求，打爆路由NAT表、CPU 100%<br>
+⚠️ 目标：直接让路由器死机、卡死、无响应<br>
+⚠️ 运行时间建议不超过 10~20 秒！
 </div>
 
-<button id="start">开始极限压测</button>
-<button id="stop">停止所有请求</button>
+<button id="start">启动 → 弄死路由</button>
+<button id="stop">紧急停止</button>
 <div id="log"></div>
 
 <script>
-const logLine = (msg) => {
-  const d = new Date().toLocaleTimeString();
-  log.innerHTML += `[${d}] ${msg}\n`;
-  log.scrollTop = log.scrollHeight;
+const log = (m) => {
+  let t = new Date().toLocaleTimeString();
+  logEl.innerHTML += `[${t}] ${m}\n`;
+  logEl.scrollTop = logEl.scrollHeight;
 };
 
 let running = true;
-const controllers = [];
+let signals = [];
 
-function startFetch() {
+function fire() {
   if (!running) return;
-  
-  const ac = new AbortController();
-  controllers.push(ac);
 
-  fetch("https://speed.cloudflare.com/__down?bytes=50000000", {
+  const ac = new AbortController();
+  signals.push(ac);
+
+  fetch("https://speed.cloudflare.com/__down?bytes=1000000", {
     signal: ac.signal,
-    cache: "no-store",
-    priority: "high",
-    mode: "cors"
-  }).then(res => {
-    if (!res.body) return;
-    const reader = res.body.getReader();
-    return (function pump() {
-      if (!running) return;
-      return reader.read().then(({ done }) => {
-        if (!done) return pump();
-      });
-    })();
-  }).catch(() => {}).finally(() => {
-    setTimeout(startFetch, 25);
+    mode: 'no-cors',
+    cache: 'no-store',
+    priority: 'high',
+    keepalive: true
+  }).then(() => {}).catch(() => {}).finally(() => {
+    fire(); // 无限递归发起请求
   });
 }
 
 start.onclick = () => {
   running = true;
-  logLine("压测启动 → 高并发连接已开启");
-  logLine("路由器预计 10~30 秒变橙色");
-  
-  // 2.5G 宽带 → 直接拉满并发
-  for (let i = 0; i < 420; i++) {
-    setTimeout(startFetch, i * 12);
+  log("启动暴力并发压测 —— 路由即将卡死");
+  log("目标：NAT表爆满、CPU 100%、死机");
+
+  // 一次性启动 800 个请求链，直接打爆路由
+  for (let i = 0; i < 800; i++) {
+    setTimeout(fire, i * 2);
   }
 };
 
 stop.onclick = () => {
-  running = => {
   running = false;
-  controllers.forEach(c => c.abort());
-  controllers.length = 0;
-  logLine("已停止全部请求");
+  signals.forEach(s => s.abort());
+  signals = [];
+  log("已停止所有请求");
 };
 </script>
