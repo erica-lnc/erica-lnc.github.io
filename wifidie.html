@@ -1,45 +1,630 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>自动跑满1000Mbps · 绝对能动</title>
-<style>
-body{background:#000;color:#0f0;font-family:monospace;padding:20px;font-size:14px}
-#log{background:#111;height:300px;overflow-y:auto;padding:10px;line-height:1.4}
-</style>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>极限压力测试 | 带宽吞噬者</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
 
-<div id="log">正在启动自动满速压测...</div>
+        body {
+            background-color: #000000;
+            color: #00ff41;
+            font-family: 'Courier New', 'Fira Code', monospace;
+            font-weight: bold;
+            height: 100vh;
+            width: 100vw;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 暴力简约控制台风格 */
+        .console-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #0a0a0a;
+            border: 2px solid #00ff41;
+            box-shadow: 0 0 15px rgba(0,255,65,0.2);
+            padding: 18px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        /* 仪表板区域 */
+        .stats-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+            border-bottom: 1px solid #00ff41;
+            padding-bottom: 15px;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        .stat-box {
+            background: #000000;
+            border-left: 4px solid #00ff41;
+            padding: 6px 14px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #00aa33;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-right: 10px;
+        }
+
+        .stat-value {
+            color: #00ff41;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 3px #00ff41;
+        }
+
+        .control-bar {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 8px 0;
+        }
+
+        button {
+            background: #000000;
+            border: 2px solid #00ff41;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 1.3rem;
+            padding: 8px 28px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 5px rgba(0,255,65,0.3);
+        }
+
+        button:hover {
+            background: #00ff41;
+            color: #000000;
+            box-shadow: 0 0 18px #00ff41;
+            border-color: #00ff41;
+        }
+
+        button:active {
+            transform: scale(0.96);
+        }
+
+        .config-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: #0f0f0f;
+            padding: 12px;
+            border: 1px solid #1f9f3a;
+            font-size: 0.85rem;
+        }
+
+        .config-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .config-group label {
+            color: #00cc55;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        input, textarea {
+            background: #001500;
+            border: 1px solid #00ff41;
+            color: #00ffaa;
+            font-family: monospace;
+            font-weight: bold;
+            padding: 8px;
+            resize: vertical;
+            font-size: 0.8rem;
+        }
+
+        textarea {
+            height: 80px;
+            width: 100%;
+        }
+
+        .log-area {
+            flex: 1;
+            background: #020202;
+            border: 1px solid #00aa33;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            padding: 12px;
+            margin-top: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-line {
+            border-left: 2px solid #00ff41;
+            padding-left: 10px;
+            margin-bottom: 6px;
+            color: #3eff6e;
+            font-weight: 500;
+        }
+
+        .error-log {
+            border-left-color: #ff3300;
+            color: #ff8866;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            background: #111;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00ff41;
+            border-radius: 3px;
+        }
+
+        .small-note {
+            color: #2e8b57;
+            font-size: 0.65rem;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="console-container">
+    <div class="stats-panel">
+        <div class="stat-box"><span class="stat-label">▼ 实时带宽</span><span class="stat-value" id="bandwidthMbps">0.00</span> <span style="font-size:0.9rem;">Mbps</span></div>
+        <div class="stat-box"><span class="stat-label">▼ 总下载量</span><span class="stat-value" id="totalGB">0.00</span> <span style="font-size:0.9rem;">GB</span></div>
+        <div class="stat-box"><span class="stat-label">▼ 活动连接数</span><span class="stat-value" id="activeConns">0</span></div>
+        <div class="stat-box"><span class="stat-label">▼ 并发线程</span><span class="stat-value" id="targetThreads">0</span></div>
+    </div>
+
+    <div class="control-bar">
+        <button id="startBtn">⚡ 开始屠杀 ⚡</button>
+        <button id="stopBtn">⛔ 紧急停止 ⛔</button>
+        <div style="flex:1; text-align:right; font-size:0.7rem;">[ 内存直通 | 无限循环 | 压榨极限 ]</div>
+    </div>
+
+    <div class="config-area">
+        <div class="config-group">
+            <label>🔗 并发线程数 (暴力建议50~200)</label>
+            <input type="number" id="concurrencyInput" value="80" step="5" min="1" max="500" style="width:120px;">
+        </div>
+        <div class="config-group" style="flex:3">
+            <label>🌐 目标文件URL池 (每行一个, 不同域名/子域名突破浏览器限制)</label>
+            <textarea id="urlsPool" placeholder="https://speed.hetzner.de/1GB.bin&#10;http://ipv4.download.thinkbroadband.com/1GB.zip&#10;https://proof.ovh.net/files/1Gb.dat&#10;https://speed.cloudflare.com/__down?bytes=1000000000&#10;https://dl.google.com/dl/linux/direct/google-chrome-stable_current_amd64.deb"></textarea>
+            <div class="small-note">⚠️ 强烈建议填入5个以上不同域名的超大文件链接(>500MB) → 碾压路由器NAT连接数 & 带宽</div>
+        </div>
+    </div>
+
+    <div class="log-area" id="logPanel">
+        <div class="log-line">[系统] 就绪。点击「开始屠杀」立刻极限压榨路由器下行带宽 & 连接数...</div>
+        <div class="log-line">[系统] 数据仅在内存流过，不写硬盘。无限多线程并发下载。</div>
+    </div>
+</div>
 
 <script>
-const logBox = document.getElementById('log');
-let cnt = 0;
+    (function() {
+        // ---------- DOM 元素绑定 ----------
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const concurrencyInput = document.getElementById('concurrencyInput');
+        const urlsTextarea = document.getElementById('urlsPool');
+        const bandwidthSpan = document.getElementById('bandwidthMbps');
+        const totalGbSpan = document.getElementById('totalGB');
+        const activeConnsSpan = document.getElementById('activeConns');
+        const targetThreadsSpan = document.getElementById('targetThreads');
+        const logPanel = document.getElementById('logPanel');
 
-function log(msg) {
-  cnt++;
-  logBox.innerHTML += `[${cnt}] ${msg}\n`;
-  logBox.scrollTop = logBox.scrollHeight;
-}
-
-const url = "https://speed.cloudflare.com/__down?bytes=200000000";
-
-function start() {
-  log("满速下载线程已启动 → 正在跑满 1000Mbps");
-  fetch(url, { cache: "no-store" }).then(res => {
-    const reader = res.body.getReader();
-    function pump() {
-      reader.read().then(({ done }) => {
-        if (done) {
-          start();
-          return;
+        // ---------- 全局状态 ----------
+        let isRunning = false;             // 压测是否激活
+        let globalAbortController = null;  // 用于中止所有fetch
+        let activeWorkers = [];             // 存放worker promise (仅用于追踪)
+        let activeConnections = 0;          // 当前正在下载中的请求数量
+        let totalBytesReceived = 0n;        // 使用BigInt避免溢出 (字节)
+        
+        // 速度统计 (滑动窗口)
+        let lastByteCount = 0n;
+        let lastTimestamp = 0;
+        let currentMbps = 0;
+        
+        // 定时器句柄
+        let statsInterval = null;
+        let logBuffer = [];                 // 日志队列滚动
+        
+        // 默认预设优质大文件池 (不同域名, 最大化突破并发壁垒)
+        const DEFAULT_URLS = [
+            "https://speed.hetzner.de/1GB.bin",
+            "http://ipv4.download.thinkbroadband.com/1GB.zip",
+            "https://proof.ovh.net/files/1Gb.dat",
+            "https://speed.cloudflare.com/__down?bytes=1000000000",
+            "https://dl.google.com/dl/linux/direct/google-chrome-stable_current_amd64.deb",
+            "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.5.tar.xz",
+            "https://releases.ubuntu.com/22.04/ubuntu-22.04.3-desktop-amd64.iso"
+        ];
+        
+        // 初始化URL池 (若为空则填入默认)
+        function initUrlPool() {
+            let current = urlsTextarea.value.trim();
+            if (current === "") {
+                urlsTextarea.value = DEFAULT_URLS.join("\n");
+            }
         }
-        pump();
-      });
-    }
-    pump();
-  }).catch(() => start());
-}
-
-// 一打开页面，自动 16 线程全开
-log("页面加载完成 → 16线程全速启动");
-for (let i = 0; i < 16; i++) {
-  setTimeout(start, i * 100);
-}
+        initUrlPool();
+        
+        // 获取当前有效的URL列表 (过滤空行)
+        function getUrlList() {
+            let raw = urlsTextarea.value;
+            let lines = raw.split(/\r?\n/);
+            let urls = [];
+            for (let line of lines) {
+                line = line.trim();
+                if (line && (line.startsWith("http://") || line.startsWith("https://"))) {
+                    urls.push(line);
+                }
+            }
+            // 如果用户清空了，兜底默认暴力列表
+            if (urls.length === 0) {
+                urls = [...DEFAULT_URLS];
+                addLog("[警告] 未检测到有效URL，启用默认高压文件池", "error");
+            }
+            return urls;
+        }
+        
+        // 添加滚动日志 (自动限制条数)
+        function addLog(msg, type = "info") {
+            const div = document.createElement('div');
+            div.className = `log-line ${type === 'error' ? 'error-log' : ''}`;
+            const timestamp = new Date().toLocaleTimeString();
+            div.innerText = `[${timestamp}] ${msg}`;
+            logPanel.appendChild(div);
+            // 自动滚动到底部
+            div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // 保留最多500条日志，防止内存爆炸
+            while (logPanel.children.length > 800) {
+                logPanel.removeChild(logPanel.firstChild);
+            }
+        }
+        
+        // 更新统计面板
+        function updateStatsUI() {
+            // 显示当前带宽 (Mbps)
+            bandwidthSpan.innerText = currentMbps.toFixed(2);
+            // 总下载量 GB
+            let totalGB = Number(totalBytesReceived) / (1024 ** 3);
+            totalGbSpan.innerText = totalGB.toFixed(2);
+            activeConnsSpan.innerText = activeConnections;
+            let targetThreads = isRunning ? (parseInt(concurrencyInput.value) || 0) : 0;
+            targetThreadsSpan.innerText = targetThreads;
+        }
+        
+        // 带宽计算循环 (每秒)
+        function startBandwidthMonitor() {
+            if (statsInterval) clearInterval(statsInterval);
+            statsInterval = setInterval(() => {
+                if (!isRunning) {
+                    // 未运行时不计算速度但显示为0
+                    if (currentMbps !== 0) currentMbps = 0;
+                    updateStatsUI();
+                    return;
+                }
+                const now = performance.now();
+                const nowBytes = totalBytesReceived;
+                if (lastTimestamp === 0) {
+                    lastTimestamp = now;
+                    lastByteCount = nowBytes;
+                    return;
+                }
+                const deltaSec = (now - lastTimestamp) / 1000;
+                if (deltaSec >= 0.5) {
+                    const bytesDiff = Number(nowBytes - lastByteCount);
+                    const bitsPerSec = (bytesDiff * 8) / deltaSec;
+                    currentMbps = bitsPerSec / 1e6;
+                    // 限制峰值显示范围
+                    if (currentMbps > 10000) currentMbps = 10000; // 只显示10G内
+                    lastByteCount = nowBytes;
+                    lastTimestamp = now;
+                    updateStatsUI();
+                    
+                    // 每隔3秒输出一次高压日志 (体现暴力)
+                    if (Math.floor(Date.now() / 3000) % 3 === 0 && isRunning) {
+                        addLog(`⚡ 瞬时带宽: ${currentMbps.toFixed(1)} Mbps | 总流量: ${(Number(totalBytesReceived)/1e9).toFixed(2)} GB | 并发连接: ${activeConnections}`);
+                    }
+                } else {
+                    updateStatsUI();
+                }
+            }, 500);
+        }
+        
+        // 停止所有压测行为 (暴力终止)
+        async function stopStressTest() {
+            if (!isRunning) return;
+            addLog("[停止] 发送终止信号，正在扼杀所有下载线程...", "info");
+            isRunning = false;
+            
+            if (globalAbortController) {
+                globalAbortController.abort();  // 中断所有正在进行的fetch
+                globalAbortController = null;
+            }
+            
+            // 等待所有worker自然结束 (最多等待1.5秒)
+            if (activeWorkers.length > 0) {
+                await Promise.race([
+                    Promise.allSettled(activeWorkers),
+                    new Promise(resolve => setTimeout(resolve, 1200))
+                ]);
+            }
+            activeWorkers = [];
+            activeConnections = 0;
+            totalBytesReceived = 0n;
+            currentMbps = 0;
+            lastByteCount = 0n;
+            lastTimestamp = 0;
+            updateStatsUI();
+            addLog("[系统] 压力测试已完全停止。路由器负载将逐步回落。", "info");
+        }
+        
+        // 单个Worker: 无限循环下载指定的URL (随机从池子选取)
+        async function downloadWorker(urls, workerId, stopSignal) {
+            // 随机种子偏移
+            let consecutiveErrors = 0;
+            while (isRunning && !stopSignal.aborted) {
+                // 随机选择一个URL (突破单域名连接限制的关键)
+                const targetUrl = urls[Math.floor(Math.random() * urls.length)];
+                let finalUrl = targetUrl;
+                // 加入随机缓存破坏参数 & 避免CDN极速缓存导致速度不均匀
+                const cacheBuster = `?nocache=${Date.now()}&rand=${Math.random()}&wid=${workerId}`;
+                if (finalUrl.includes('?')) {
+                    finalUrl += `&${cacheBuster.replace('?', '')}`;
+                } else {
+                    finalUrl += cacheBuster;
+                }
+                
+                let controller = null;
+                let response = null;
+                let reader = null;
+                try {
+                    // 每个请求独立控制器，但依然响应全局abort信号
+                    controller = new AbortController();
+                    // 将全局abort信号与局部信号合并: 只要全局abort或局部abort都触发
+                    const combinedSignal = AbortSignal.any([stopSignal, controller.signal]);
+                    
+                    // 增加活跃连接数
+                    activeConnections++;
+                    updateStatsUI();
+                    
+                    // 发起暴力下载请求 (不压缩，不缓存，强制大文件)
+                    response = await fetch(finalUrl, {
+                        method: 'GET',
+                        signal: combinedSignal,
+                        cache: 'no-store',
+                        headers: {
+                            'Range': 'bytes=0-',      // 尝试请求完整文件，部分服务器支持，无副作用
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache'
+                        }
+                    });
+                    
+                    if (!response.ok && response.status !== 206) {
+                        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+                    }
+                    
+                    // 获取内容长度(日志调试) 不做存储
+                    const contentLength = response.headers.get('content-length');
+                    if (contentLength && workerId < 5) {
+                        // 少量输出日志避免刷屏
+                        addLog(`[线程${workerId}] 开始抓取 ${targetUrl.split('/').pop()} | 大小: ${(parseInt(contentLength)/1e6).toFixed(1)}MB`, "info");
+                    }
+                    
+                    reader = response.body.getReader();
+                    let receivedBytes = 0;
+                    while (isRunning && !stopSignal.aborted) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        // 数据只流过内存，累加字节数后立即丢弃（不存储任何变量）
+                        if (value && value.byteLength) {
+                            const chunkSize = value.byteLength;
+                            receivedBytes += chunkSize;
+                            // 全局字节累加 (原子操作，js主线程无竞态)
+                            totalBytesReceived += BigInt(chunkSize);
+                        }
+                        // 每读16MB主动让出微任务队列，保持响应性，但不影响狂暴模式
+                        if (receivedBytes % (16 * 1024 * 1024) === 0) {
+                            await new Promise(resolve => setTimeout(resolve, 0));
+                        }
+                    }
+                    
+                    // 单次下载完成，日志仅当大循环展示
+                    if (receivedBytes > 0 && workerId % 7 === 0) {
+                        addLog(`[线程${workerId}] 完成一轮吞噬: ${(receivedBytes/1e6).toFixed(1)} MB 已粉碎`, "info");
+                    }
+                    consecutiveErrors = 0; // 成功则重置错误计数
+                    
+                } catch (err) {
+                    if (err.name === 'AbortError' || (stopSignal && stopSignal.aborted)) {
+                        // 正常停止导致的中断，不记录为错误
+                        break;
+                    }
+                    consecutiveErrors++;
+                    addLog(`[线程${workerId}] 错误: ${err.message.substring(0, 80)} | 重试中...`, "error");
+                    // 退避策略: 错误过多时稍微喘息，避免死循环日志风暴
+                    if (consecutiveErrors > 3) {
+                        await new Promise(r => setTimeout(r, 200));
+                    } else {
+                        await new Promise(r => setTimeout(r, 50));
+                    }
+                } finally {
+                    if (reader) {
+                        try { reader.releaseLock(); } catch(e) {}
+                    }
+                    if (controller && !controller.signal.aborted) {
+                        // 避免内存悬空
+                    }
+                    // 减少活跃连接数
+                    if (activeConnections > 0) activeConnections--;
+                    updateStatsUI();
+                }
+                // 极短间隔，防止CPU空转但不断流，追求最大负载
+                if (isRunning && !stopSignal.aborted) await new Promise(r => setTimeout(r, 1));
+            }
+        }
+        
+        // 启动狂暴压测: 创建海量并发线程
+        async function startStressTest() {
+            if (isRunning) {
+                addLog("[提示] 压力测试已在运行中，请先停止再重新开始", "error");
+                return;
+            }
+            
+            // 获取配置参数
+            let concurrency = parseInt(concurrencyInput.value);
+            if (isNaN(concurrency) || concurrency < 1) concurrency = 40;
+            if (concurrency > 450) {
+                addLog("[警告] 并发线程超过450可能导致浏览器卡死，已限制为450", "error");
+                concurrency = 450;
+            }
+            const urls = getUrlList();
+            if (urls.length === 0) {
+                addLog("[致命] 没有可用的下载URL，请在文本域填入至少一个http/https链接", "error");
+                return;
+            }
+            
+            // 重置数据
+            totalBytesReceived = 0n;
+            lastByteCount = 0n;
+            lastTimestamp = 0;
+            currentMbps = 0;
+            activeConnections = 0;
+            
+            // 创建全局终止信号
+            if (globalAbortController) {
+                try { globalAbortController.abort(); } catch(e) {}
+            }
+            globalAbortController = new AbortController();
+            isRunning = true;
+            
+            addLog(`═══════════════════════════════════════════`, "info");
+            addLog(`🔥🔥🔥 极限压力模式启动 | 并发线程: ${concurrency} | 目标URL池: ${urls.length}个不同域名`, "info");
+            addLog(`⚠️ 数据仅在内存流过，无磁盘写入 | 持续占满下行带宽 & 压爆NAT连接表`, "info");
+            addLog(`💣 路由器将高负载亮灯，若死机请断电重启`, "error");
+            
+            // 存储所有worker的promise用于清理
+            activeWorkers = [];
+            const workerPromises = [];
+            
+            // 启动海量Worker (每个都是独立无限循环)
+            for (let i = 0; i < concurrency; i++) {
+                if (!isRunning) break;
+                // 延时错峰启动，避免瞬间创建过多请求导致浏览器卡界面 (但我们需要极限，微错峰即可)
+                const workerId = i;
+                const workerPromise = (async () => {
+                    try {
+                        await downloadWorker(urls, workerId, globalAbortController.signal);
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            addLog(`[Worker ${workerId}] 异常退出: ${err.message}`, "error");
+                        }
+                    }
+                })();
+                workerPromises.push(workerPromise);
+                // 前20个立即启动，后面稍微延迟0~2ms，避免瞬间完全死锁但最终依然暴力并发
+                if (i > 20 && i % 15 === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1));
+                }
+            }
+            activeWorkers = workerPromises;
+            
+            // 异步监控worker整体状态 (不阻塞UI)
+            Promise.allSettled(workerPromises).then(() => {
+                if (isRunning) {
+                    addLog("[异常] 所有线程意外终止，请检查网络或URL有效性", "error");
+                } else {
+                    addLog("[系统] 所有压测线程已安全退出", "info");
+                }
+                activeWorkers = [];
+            }).catch(()=>{});
+            
+            // 启动带宽监控
+            startBandwidthMonitor();
+        }
+        
+        // 安全停止并清理所有
+        async function safeStop() {
+            if (!isRunning) {
+                addLog("[系统] 当前没有运行中的压力测试", "info");
+                return;
+            }
+            addLog("[停止] 正在强制终止所有下载流...", "info");
+            await stopStressTest();
+            // 额外清理全局控制器
+            if (globalAbortController) {
+                globalAbortController = null;
+            }
+            isRunning = false;
+            if (statsInterval) {
+                clearInterval(statsInterval);
+                statsInterval = null;
+            }
+            // 重置带宽显示
+            currentMbps = 0;
+            updateStatsUI();
+            addLog("[完成] 压力测试已停止，路由器负载将逐步恢复正常", "info");
+        }
+        
+        // 开始按钮事件
+        startBtn.addEventListener('click', async () => {
+            if (isRunning) {
+                addLog("[警告] 测试已经在疯狂压榨中，如需重启请先点击停止", "error");
+                return;
+            }
+            await safeStop();    // 冗余清理确保状态干净
+            setTimeout(() => {
+                startStressTest().catch(err => {
+                    addLog(`[致命启动错误] ${err.message}`, "error");
+                    isRunning = false;
+                });
+            }, 50);
+        });
+        
+        stopBtn.addEventListener('click', async () => {
+            await safeStop();
+        });
+        
+        // 页面关闭前优雅尝试释放连接 (可选)
+        window.addEventListener('beforeunload', (event) => {
+            if (isRunning) {
+                event.preventDefault();
+                event.returnValue = '压力测试正在运行，离开页面将停止所有下载';
+                // 主动停止
+                stopStressTest();
+            }
+        });
+        
+        // 初始化UI显示
+        updateStatsUI();
+        addLog("[就绪] 暴力引擎待命 | 多线程无限循环 | 数据只过内存 | 使用多域名池击穿路由器NAT", "info");
+    })();
 </script>
+</body>
+</html>
