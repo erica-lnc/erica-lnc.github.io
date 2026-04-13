@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<title>Router Full Stress Test</title>
+<style>
+*{box-sizing:border-box}
+body{background:#000;color:#0f0;font-family:system-ui;padding:2rem}
+.warn{background:#500;color:#ff0;padding:1rem;border-radius:8px;font-weight:bold}
+#start{background:#a00;color:#fff;border:none;padding:1rem 2rem;font-size:1.2rem;cursor:pointer;margin:10px 0}
+#stop{background:#080;color:#fff;border:none;padding:1rem 2rem;font-size:1.2rem;cursor:pointer}
+#log{background:#000;border:1px solid #070;height:360px;overflow-y:auto;padding:1rem;font-size:12px;line-height:1.4}
+</style>
+
+<div class="warn">
+⚠️ 上传到服务器后运行<br>
+⚠️ 会大量并发连接，路由器 CPU 满载、变橙灯、可能死机<br>
+⚠️ 仅用于自家网络测试
+</div>
+
+<button id="start">开始极限压测</button>
+<button id="stop">停止所有请求</button>
+<div id="log"></div>
+
+<script>
+const logLine = (msg) => {
+  const d = new Date().toLocaleTimeString();
+  log.innerHTML += `[${d}] ${msg}\n`;
+  log.scrollTop = log.scrollHeight;
+};
+
+let running = true;
+const controllers = [];
+
+function startFetch() {
+  if (!running) return;
+  
+  const ac = new AbortController();
+  controllers.push(ac);
+
+  fetch("https://speed.cloudflare.com/__down?bytes=50000000", {
+    signal: ac.signal,
+    cache: "no-store",
+    priority: "high",
+    mode: "cors"
+  }).then(res => {
+    if (!res.body) return;
+    const reader = res.body.getReader();
+    return (function pump() {
+      if (!running) return;
+      return reader.read().then(({ done }) => {
+        if (!done) return pump();
+      });
+    })();
+  }).catch(() => {}).finally(() => {
+    setTimeout(startFetch, 25);
+  });
+}
+
+start.onclick = () => {
+  running = true;
+  logLine("压测启动 → 高并发连接已开启");
+  logLine("路由器预计 10~30 秒变橙色");
+  
+  // 2.5G 宽带 → 直接拉满并发
+  for (let i = 0; i < 420; i++) {
+    setTimeout(startFetch, i * 12);
+  }
+};
+
+stop.onclick = () => {
+  running = => {
+  running = false;
+  controllers.forEach(c => c.abort());
+  controllers.length = 0;
+  logLine("已停止全部请求");
+};
+</script>
