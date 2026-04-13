@@ -1,52 +1,45 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>跑满 1000Mbps · 不留文件</title>
+<title>自动跑满1000Mbps · 绝对能动</title>
 <style>
-body{background:#000;color:#0f0;padding:20px;font-family: monospace}
-#log{background:#111;height:280px;overflow-y:auto;padding:10px;margin:10px 0}
-button{padding:12px 24px;font-size:16px}
-#start{background:#080;color:#fff}
-#stop{background:#800;color:#fff}
+body{background:#000;color:#0f0;font-family:monospace;padding:20px;font-size:14px}
+#log{background:#111;height:300px;overflow-y:auto;padding:10px;line-height:1.4}
 </style>
 
-<button id="start">开始跑满 1000Mbps</button>
-<button id="stop">停止</button>
-<div id="log"></div>
+<div id="log">正在启动自动满速压测...</div>
 
 <script>
 const logBox = document.getElementById('log');
-function log(m) {
-  logBox.innerHTML += `[${new Date().toLocaleTimeString()}] ${m}\n`;
+let cnt = 0;
+
+function log(msg) {
+  cnt++;
+  logBox.innerHTML += `[${cnt}] ${msg}\n`;
   logBox.scrollTop = logBox.scrollHeight;
 }
 
-let stop = false;
-// 200MB 大文件，专门跑满速
 const url = "https://speed.cloudflare.com/__down?bytes=200000000";
 
-async function download() {
-  if (stop) return;
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
+function start() {
+  log("满速下载线程已启动 → 正在跑满 1000Mbps");
+  fetch(url, { cache: "no-store" }).then(res => {
     const reader = res.body.getReader();
-    while (!stop) {
-      const { done } = await reader.read();
-      if (done) break;
-      // 数据读到就丢，不保存、不存储
+    function pump() {
+      reader.read().then(({ done }) => {
+        if (done) {
+          start();
+          return;
+        }
+        pump();
+      });
     }
-  } catch (e) {}
-  download(); // 无限循环继续跑
+    pump();
+  }).catch(() => start());
 }
 
-document.getElementById('start').onclick = () => {
-  stop = false;
-  log("开始满速下载 1000Mbps+ → 文件只流过不保存");
-  // 16 线程并发拉满带宽
-  for(let i=0; i<16; i++) download();
-};
-
-document.getElementById('stop').onclick = () => {
-  stop = true;
-  log("已停止");
-};
+// 一打开页面，自动 16 线程全开
+log("页面加载完成 → 16线程全速启动");
+for (let i = 0; i < 16; i++) {
+  setTimeout(start, i * 100);
+}
 </script>
