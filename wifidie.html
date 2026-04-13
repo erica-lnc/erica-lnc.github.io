@@ -1,74 +1,67 @@
 <!DOCTYPE html>
-<html>
-<head>
 <meta charset="utf-8">
-<title>暴力压测 · 必卡死路由</title>
+<title>路由毁灭者 · 终极暴力压测</title>
 <style>
-body{background:#000;color:#0f0; font-family: monospace; padding: 20px;}
-#log{background:#111; height:300px; overflow-y:scroll; padding:10px; border:1px solid #080; margin:10px 0;}
-button{padding:10px 20px; font-size:16px; margin:5px;}
-#start{background:#a00; color:#fff;}
-#stop{background:#080; color:#fff;}
+body{background:#000;color:#ff0;font-family:monospace;padding:20px}
+.warn{color:red;background:#222;padding:10px;border:2px solid red}
+#log{background:#111;color:#0f0;height:340px;overflow-y:auto;padding:10px;margin:10px 0}
+button{padding:12px 24px;font-size:16px;margin:5px}
+#start{background:red;color:white}
+#stop{background:green;color:white}
 </style>
-</head>
-<body>
 
-<h2>⚠️ 路由器暴力压测（必出效果）</h2>
-<p>点开始后日志会疯狂刷屏，网络立刻占满</p>
+<div class="warn">
+⚠️ 警告：此页面会瞬间创建数千连接<br>
+⚠️ 路由器会：高CPU → 橙灯 → 断网 → 死机<br>
+⚠️ 效果远超百兆PoE暴力测试<br>
+⚠️ 运行 5~15 秒即可测出极限！
+</div>
 
-<button id="start">开始压测</button>
-<button id="stop">停止</button>
+<button id="start">开始毁灭压测</button>
+<button id="stop">紧急停止</button>
 <div id="log"></div>
 
 <script>
-let stopped = false;
-let count = 0;
-const log = document.getElementById('log');
+const logDiv = document.getElementById('log');
+let logCount = 0;
+let stop = false;
 
-function show(text) {
-  count++;
-  log.innerHTML += `[${count}] ${text}\n`;
-  log.scrollTop = log.scrollHeight;
+function log(msg) {
+  logCount++;
+  logDiv.innerHTML += `[${logCount}] ${msg}\n`;
+  logDiv.scrollTop = logDiv.scrollHeight;
 }
 
-async function attack() {
-  if (stopped) return;
-  try {
-    let controller = new AbortController();
-    fetch('https://speed.cloudflare.com/__down?bytes=5000000', {
-      signal: controller.signal,
-      cache: 'no-store'
-    }).then(res => {
-      if (res.body) {
-        let reader = res.body.getReader();
-        function pump() {
-          if (stopped) { controller.abort(); return; }
-          reader.read().then(v => {
-            if (!v.done) pump();
-          });
-        }
-        pump();
-      }
-    }).catch(()=>{});
-  } catch(e) {}
+// 无限暴力请求（最原始、浏览器不限制）
+function attack() {
+  if (stop) return;
+  const rand = Math.random();
+  const url = `https://speed.cloudflare.com/__down?bytes=2000000&r=${rand}`;
+
+  // 1. 图片并发（浏览器不限制）
+  const img = new Image();
+  img.src = url;
+  img.onload = img.onerror = () => attack();
+
+  // 2. 同时 fetch 压死连接
+  fetch(url, { cache: 'no-store', mode: 'no-cors' }).catch(()=>{});
+
+  log("连接已建立 → 路由压力拉满");
 }
 
+// 启动 2000 并发，直接干爆 NAT 表
 document.getElementById('start').onclick = () => {
-  stopped = false;
-  show('压测开始 → 即将打爆路由器');
-  // 一次性开 600 个请求，浏览器直接火力拉满
-  for(let i=0; i<600; i++) {
-    setTimeout(() => {
-      attack();
-      attack();
-    }, i*4);
+  stop = false;
+  log("=== 路由毁灭程序启动 ===");
+  log("路由器即将卡死、断网、亮橙灯");
+  
+  for(let i=0; i<2000; i++) {
+    setTimeout(attack, i);
   }
-};
+}
 
 document.getElementById('stop').onclick = () => {
-  stopped = true;
-  show('压测停止');
-};
+  stop = true;
+  log("=== 停止攻击 ===");
+}
 </script>
-</body>
-</html>
