@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>超聲波文字聊天（雙機版）</title>
+<style>
+  :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  body{margin:0;padding:16px;background:#0f1724;color:#e6eef8;display:flex;flex-direction:column;gap:12px;min-height:100vh}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  h1{font-size:18px;margin:0}
+  .mode-toggle{display:flex;gap:8px}
+  button{background:#0b1220;border:1px solid #1f2a44;color:#dbeafe;padding:10px 12px;border-radius:8px;font-size:15px}
+  button.primary{background:#1f6feb;border-color:#1f6feb;color:white}
+  .panel{background:#071028;border:1px solid #12203a;padding:12px;border-radius:12px;display:flex;flex-direction:column;gap:10px}
+  textarea{width:100%;min-height:120px;padding:12px;border-radius:8px;border:1px solid #1b2a44;background:#041025;color:#e6eef8;font-size:16px;resize:vertical}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .big{font-size:20px;font-weight:600}
+  .status{font-size:13px;color:#9fb3d9}
+  .received{font-size:28px;font-weight:700;line-height:1.2;padding:12px;border-radius:8px;background:#071a2b;border:1px solid #12324a;min-height:80px;display:flex;align-items:center;justify-content:center;text-align:center}
+  footer{font-size:12px;color:#9fb3d9}
+  label.switch{display:inline-flex;align-items:center;gap:8px}
+  input[type=range]{width:160px}
+  .small{font-size:13px;color:#9fb3d9}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  .hint{font-size:13px;color:#9fb3d9}
+</style>
+</head>
+<body>
+<header>
+  <h1>超聲波文字聊天（雙機版）</h1>
+  <div class="mode-toggle">
+    <button id="sendModeBtn" class="primary">發送模式</button>
+    <button id="recvModeBtn">接收模式</button>
+  </div>
+</header>
+
+<section class="panel" id="sendPanel">
+  <div class="row">
+    <div style="flex:1">
+      <div class="small">輸入要發送的文字（中英數與常用符號）</div>
+      <textarea id="messageInput" placeholder="在此輸入文字，按 發送 開始超聲波傳輸"></textarea>
+    </div>
+    <div style="width:220px;display:flex;flex-direction:column;gap:8px">
+      <div class="small">頻率範圍（固定在 19000Hz ~ 20500Hz）</div>
+      <div class="small">低頻 (bit 0): <span id="f0Label">19000</span> Hz</div>
+      <div class="small">高頻 (bit 1): <span id="f1Label">20500</span> Hz</div>
+      <div class="small">符號時長（ms）: <span id="symLabel">5</span></div>
+      <input id="symRange" type="range" min="3" max="12" value="5" />
+      <div class="controls">
+        <button id="playBtn" class="primary">發送</button>
+        <button id="previewBtn">預聽</button>
+        <button id="stopPlayBtn">停止</button>
+      </div>
+      <div class="status" id="sendStatus">準備就緒</div>
+    </div>
+  </div>
+  <div class="hint">說明：發送端會把文字 UTF-8 編碼後以 FSK（二進位）方式在 19000Hz / 20500Hz 間切換播放。符號時長越短速度越快，但抗干擾能力下降。建議 3~8 ms。</div>
+</section>
+
+<section class="panel" id="recvPanel" style="display:none">
+  <div class="row">
+    <div style="flex:1">
+      <div class="small">接收內容（大字顯示）</div>
+      <div class="received" id="receivedText">尚未接收</div>
+    </div>
+    <div style="width:220px;display:flex;flex-direction:column;gap:8px">
+      <div class="small">監聽狀態</div>
+      <div class="controls">
+        <button id="startRecvBtn" class="primary">開始監聽</button>
+        <button id="stopRecvBtn">停止監聽</button>
+        <button id="clearRecvBtn">清除</button>
+      </div>
+      <div class="small">靈敏度（閾值）: <span id="thLabel">0.02</span></div>
+      <input id="thRange" type="range" min="1" max="100" value="2" />
+      <div class="status" id="recvStatus">未監聽</div>
+    </div>
+  </div>
+  <div class="hint">說明：接收端使用 Goertzel 演算法在 19000Hz 與 20500Hz 上檢測能量，並以簡單去抖與門檻判斷位元。請允許麥克風權限。</div>
+</section>
+
+<footer>
+  <div class="small">技術說明：純前端（Web Audio API + Analyser），FSK 編碼，UTF-8 支援中英文。請在安靜環境、手機靠近或 2~5 米範圍內測試。</div>
+</footer>
+
+<script>
+/*
+  Ultrasonic Text Chat (single-file)
+  - BFSK (binary FSK) between f0 and f1 in 19000Hz~20500Hz
+  - Frame: PREAMBLE (0xAA x2) + LEN (1 byte) + PAYLOAD (UTF-8 bytes) + CRC8
+  - Symbol duration adjustable (ms). Default 5ms => 200 baud.
+  - Sender: generate AudioBuffer with concatenated sine windows, play via AudioBufferSourceNode.
+  - Receiver: use getFloatTimeDomainData + Goertzel per symbol window to detect bit 0/1.
+  - Simple debounce, thresholding, preamble detection and byte assembly.
+  - No external libs. Comments explain key parts.
+*/
+
+/* ---------------------------
+   Configuration and helpers
+   --------------------------- */
+const F0 = 19000; // frequency for bit 0 (Hz)
+const F1 = 20500; // frequency for bit 1 (Hz)
+const PREAMBLE_BYTES = [0xAA, 0xAA]; // 10101010 pattern x2 for sync
+const MAX_PAYLOAD = 200; // limit payload bytes to avoid long transmissions
+const SAMPLE_RATE = 48000; // target sample rate for generation (actual ctx.sampleRate used if different)
+const DEFAULT_SYMBOL_MS = 5; // default symbol duration in ms (200 baud)
+const WINDOW_OVERLAP = 0; // not used for generation; receiver uses sliding buffer
+
+// CRC8 (simple CRC-8-CCITT)
+function crc8(bytes) {
+  let crc = 0x00;
+  for (let b of bytes) {
+    crc ^= b;
+    for (let i = 0; i < 8; i++) {
+      if (crc & 0x80) crc = ((crc << 1) ^ 0x07) & 0xFF;
+      else crc = (crc << 1) & 0xFF;
+    }
+  }
+  return crc;
+}
+
+// Convert text to UTF-8 bytes
+function textToBytes(str) {
+  return new TextEncoder().encode(str);
+}
+function bytesToText(bytes) {
+  try { return new TextDecoder().decode(new Uint8Array(bytes)); }
+  catch(e){ return ''; }
+}
+
+// Build frame: preamble + len + payload + crc
+function buildFrame(payloadBytes) {
+  if (payloadBytes.length > MAX_PAYLOAD) payloadBytes = payloadBytes.slice(0, MAX_PAYLOAD);
+  const len = payloadBytes.length;
+  const frame = [];
+  frame.push(...PREAMBLE_BYTES);
+  frame.push(len & 0xFF);
+  frame.push(...payloadBytes);
+  const crc = crc8([len, ...payloadBytes]);
+  frame.push(crc);
+  return new Uint8Array(frame);
+}
+
+// Convert frame to bit array (LSB-first per byte)
+function frameToBits(frame) {
+  const bits = [];
+  for (let b of frame) {
+    for (let i = 0; i < 8; i++) bits.push((b >> i) & 1);
+  }
+  return bits;
+}
+
+/* ---------------------------
+   Audio generation (sender)
+   --------------------------- */
+let audioCtx = null;
+let currentSource = null;
+
+async function ensureAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // resume on user gesture if suspended
+    if (audioCtx.state === 'suspended') {
+      try { await audioCtx.resume(); } catch(e){}
+    }
+  }
+  return audioCtx;
+}
+
+// Generate a smooth windowed sine buffer for a given frequency and duration
+function generateToneSamples(freq, durationSec, sampleRate) {
+  const len = Math.floor(durationSec * sampleRate);
+  const samples = new Float32Array(len);
+  // Hann window to reduce clicks at symbol boundaries
+  for (let i = 0; i < len; i++) {
+    const t = i / sampleRate;
+    const phase = 2 * Math.PI * freq * t;
+    const window = 0.5 * (1 - Math.cos(2 * Math.PI * i / (len - 1))); // Hann
+    samples[i] = Math.sin(phase) * window * 0.9; // scale to avoid clipping
+  }
+  return samples;
+}
+
+// Build full AudioBuffer for bit sequence
+async function buildAudioBufferForBits(bits, symbolMs) {
+  const ctx = await ensureAudioContext();
+  const sr = ctx.sampleRate || SAMPLE_RATE;
+  const symbolSec = symbolMs / 1000;
+  const samplesPerSymbol = Math.floor(symbolSec * sr);
+  // Pre-generate tone samples for both frequencies for symbol length
+  const s0 = generateToneSamples(F0, symbolSec, sr);
+  const s1 = generateToneSamples(F1, symbolSec, sr);
+  const totalSamples = samplesPerSymbol * bits.length;
+  const buffer = ctx.createBuffer(1, totalSamples, sr);
+  const ch = buffer.getChannelData(0);
+  let offset = 0;
+  for (let bit of bits) {
+    const src = bit ? s1 : s0;
+    // If src length equals samplesPerSymbol, copy directly; else copy up to available
+    for (let i = 0; i < samplesPerSymbol; i++) {
+      ch[offset + i] = src[i % src.length];
+    }
+    offset += samplesPerSymbol;
+  }
+  return buffer;
+}
+
+// Play buffer
+async function playBuffer(buffer) {
+  const ctx = await ensureAudioContext();
+  stopPlayback();
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  src.connect(ctx.destination);
+  src.onended = () => { currentSource = null; updateSendStatus('播放結束'); };
+  currentSource = src;
+  src.start();
+  updateSendStatus('播放中...');
+}
+function stopPlayback() {
+  if (currentSource) {
+    try { currentSource.stop(); } catch(e){}
+    currentSource.disconnect();
+    currentSource = null;
+  }
+}
+
+/* ---------------------------
+   Receiver: Goertzel + processing
+   --------------------------- */
+let micStream = null;
+let analyser = null;
+let dataArray = null;
+let recvCtx = null;
+let recvRunning = false;
+let audioBufferRing = null; // Float32Array ring buffer
+let ringWritePos = 0;
+let ringSize = 0;
+let symbolSamples = 0;
+let detectIntervalId = null;
+
+// Goertzel implementation for single frequency on a buffer
+function goertzel(samples, sampleRate, targetFreq) {
+  const N = samples.length;
+  const k = Math.round(0.5 + ((N * targetFreq) / sampleRate));
+  const omega = (2 * Math.PI * k) / N;
+  const sine = Math.sin(omega);
+  const cosine = Math.cos(omega);
+  const coeff = 2 * cosine;
+  let q0 = 0, q1 = 0, q2 = 0;
+  for (let i = 0; i < N; i++) {
+    q0 = coeff * q1 - q2 + samples[i];
+    q2 = q1;
+    q1 = q0;
+  }
+  const real = (q1 - q2 * cosine);
+  const imag = (q2 * sine);
+  const magnitude = Math.sqrt(real*real + imag*imag);
+  return magnitude;
+}
+
+// Append new samples into ring buffer
+function appendToRing(samples) {
+  const len = samples.length;
+  for (let i = 0; i < len; i++) {
+    audioBufferRing[ringWritePos] = samples[i];
+    ringWritePos = (ringWritePos + 1) % ringSize;
+  }
+}
+
+// Read a contiguous window of length N ending at current write pos
+function readWindow(N) {
+  const out = new Float32Array(N);
+  let start = (ringWritePos - N + ringSize) % ringSize;
+  for (let i = 0; i < N; i++) {
+    out[i] = audioBufferRing[(start + i) % ringSize];
+  }
+  return out;
+}
+
+/* ---------------------------
+   Frame detection & decoding
+   --------------------------- */
+let bitBuffer = []; // collected bits since last sync
+let byteBuffer = []; // assembled bytes
+let receivingState = { synced:false, bitsRead:0, expectedLen:0, payload:[], lastByteTime:0 };
+
+// Convert bits (LSB-first per byte) to bytes
+function bitsToBytes(bits) {
+  const bytes = [];
+  for (let i = 0; i + 7 < bits.length; i += 8) {
+    let v = 0;
+    for (let b = 0; b < 8; b++) v |= (bits[i + b] & 1) << b;
+    bytes.push(v);
+  }
+  return bytes;
+}
+
+// Try to parse frames from byteBuffer
+function tryParseFrames() {
+  // We expect: PREAMBLE(2 bytes) + LEN + PAYLOAD + CRC
+  const arr = byteBuffer;
+  for (let i = 0; i + 4 <= arr.length; i++) {
+    if (arr[i] === PREAMBLE_BYTES[0] && arr[i+1] === PREAMBLE_BYTES[1]) {
+      const len = arr[i+2];
+      const total = 2 + 1 + len + 1;
+      if (i + total <= arr.length) {
+        const payload = arr.slice(i+3, i+3+len);
+        const crc = arr[i+3+len];
+        const calc = crc8([len, ...payload]);
+        if (calc === crc) {
+          // success: extract payload
+          displayReceived(bytesToText(payload));
+          // remove consumed bytes
+          byteBuffer = arr.slice(i + total);
+          return true;
+        } else {
+          // CRC mismatch: drop this preamble and continue
+          // remove first byte to resync
+          byteBuffer.shift();
+          return false;
+        }
+      } else {
+        // not enough bytes yet
+        return false;
+      }
+    }
+  }
+  // no preamble found: drop earliest byte to avoid infinite growth
+  if (arr.length > 1024) byteBuffer.shift();
+  return false;
+}
+
+// Display received text in UI
+function displayReceived(text) {
+  const el = document.getElementById('receivedText');
+  el.textContent = text || '[空訊息]';
+  document.getElementById('recvStatus').textContent = '接收成功';
+}
+
+/* ---------------------------
+   Detection loop
+   --------------------------- */
+function startDetectionLoop(symbolMs, threshold) {
+  if (!analyser) return;
+  const ctx = audioCtx || recvCtx;
+  const sr = (ctx && ctx.sampleRate) ? ctx.sampleRate : 48000;
+  symbolSamples = Math.max(8, Math.floor(symbolMs / 1000 * sr));
+  // ring buffer holds several symbols
+  ringSize = symbolSamples * 64;
+  audioBufferRing = new Float32Array(ringSize);
+  ringWritePos = 0;
+  bitBuffer = [];
+  byteBuffer = [];
+  receivingState = { synced:false, bitsRead:0, expectedLen:0, payload:[], lastByteTime:0 };
+
+  // Poll analyser for time domain data and append to ring
+  const td = new Float32Array(analyser.fftSize);
+  // We'll sample frequently and append; detection runs at symbol rate
+  const appendInterval = 20; // ms
+  const appendId = setInterval(() => {
+    if (!recvRunning) { clearInterval(appendId); return; }
+    analyser.getFloatTimeDomainData(td);
+    appendToRing(td);
+  }, appendInterval);
+
+  // Detection: every symbol duration, analyze last symbolSamples
+  detectIntervalId = setInterval(() => {
+    if (!recvRunning) return;
+    const window = readWindow(symbolSamples);
+    // compute Goertzel magnitudes for both frequencies
+    const mag0 = goertzel(window, sr, F0);
+    const mag1 = goertzel(window, sr, F1);
+    // normalize by window energy to be robust to volume
+    let energy = 0;
+    for (let i = 0; i < window.length; i++) energy += Math.abs(window[i]);
+    const norm0 = mag0 / (energy + 1e-9);
+    const norm1 = mag1 / (energy + 1e-9);
+    // decide bit by comparing normalized magnitudes and threshold
+    const bit = (norm1 > norm0 && norm1 > threshold) ? 1 : ((norm0 > norm1 && norm0 > threshold) ? 0 : null);
+    // simple debounce: require consistent detection for a few symbols
+    processDetectedBit(bit);
+  }, Math.max(3, Math.floor(symbolMs)));
+}
+
+// Process detected bit (null means uncertain)
+let debounceState = { lastBit:null, count:0, required:2 };
+function processDetectedBit(bit) {
+  const now = Date.now();
+  if (bit === null) {
+    // uncertain: reset count but keep lastBit for short time
+    debounceState.count = 0;
+    return;
+  }
+  if (debounceState.lastBit === bit) {
+    debounceState.count++;
+  } else {
+    debounceState.lastBit = bit;
+    debounceState.count = 1;
+  }
+  // require a small run of same bits to accept (reduces jitter)
+  if (debounceState.count >= debounceState.required) {
+    // accept bit
+    bitBuffer.push(bit);
+    debounceState.count = 0; // reset to avoid duplicates
+    // assemble bytes when we have 8 bits
+    if (bitBuffer.length >= 8) {
+      const byteBits = bitBuffer.splice(0,8);
+      let v = 0;
+      for (let i = 0; i < 8; i++) v |= (byteBits[i] & 1) << i;
+      byteBuffer.push(v);
+      // try parse frames
+      tryParseFrames();
+    }
+  }
+}
+
+/* ---------------------------
+   Start / Stop receiver
+   --------------------------- */
+async function startReceiver(symbolMs, threshold) {
+  if (recvRunning) return;
+  try {
+    recvCtx = await ensureAudioContext();
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true, sampleRate: recvCtx.sampleRate } });
+    const src = recvCtx.createMediaStreamSource(micStream);
+    analyser = recvCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    src.connect(analyser);
+    recvRunning = true;
+    startDetectionLoop(symbolMs, threshold);
+    document.getElementById('recvStatus').textContent = '監聽中...';
+  } catch (e) {
+    console.error(e);
+    document.getElementById('recvStatus').textContent = '無法啟用麥克風';
+  }
+}
+
+function stopReceiver() {
+  recvRunning = false;
+  if (detectIntervalId) { clearInterval(detectIntervalId); detectIntervalId = null; }
+  if (micStream) {
+    const tracks = micStream.getTracks();
+    for (let t of tracks) t.stop();
+    micStream = null;
+  }
+  analyser = null;
+  document.getElementById('recvStatus').textContent = '已停止';
+}
+
+/* ---------------------------
+   UI wiring
+   --------------------------- */
+const sendPanel = document.getElementById('sendPanel');
+const recvPanel = document.getElementById('recvPanel');
+document.getElementById('sendModeBtn').addEventListener('click', () => {
+  sendPanel.style.display = ''; recvPanel.style.display = 'none';
+  document.getElementById('sendModeBtn').classList.add('primary');
+  document.getElementById('recvModeBtn').classList.remove('primary');
+});
+document.getElementById('recvModeBtn').addEventListener('click', () => {
+  sendPanel.style.display = 'none'; recvPanel.style.display = '';
+  document.getElementById('recvModeBtn').classList.add('primary');
+  document.getElementById('sendModeBtn').classList.remove('primary');
+});
+
+const symRange = document.getElementById('symRange');
+const symLabel = document.getElementById('symLabel');
+symRange.addEventListener('input', () => {
+  symLabel.textContent = symRange.value;
+});
+
+const thRange = document.getElementById('thRange');
+const thLabel = document.getElementById('thLabel');
+thRange.addEventListener('input', () => {
+  // map 1..100 to 0.005..0.05 roughly
+  const v = Number(thRange.value);
+  const mapped = (v / 100) * 0.08; // 0..0.08
+  thLabel.textContent = mapped.toFixed(3);
+});
+
+function updateSendStatus(text) { document.getElementById('sendStatus').textContent = text; }
+
+// Play / Send handlers
+document.getElementById('playBtn').addEventListener('click', async () => {
+  const txt = document.getElementById('messageInput').value || '';
+  if (!txt) { updateSendStatus('請輸入文字'); return; }
+  const payload = Array.from(textToBytes(txt));
+  const frame = buildFrame(payload);
+  const bits = frameToBits(frame);
+  const symbolMs = Number(symRange.value);
+  updateSendStatus('生成中...');
+  try {
+    const buffer = await buildAudioBufferForBits(bits, symbolMs);
+    await playBuffer(buffer);
+    updateSendStatus('播放中...');
+  } catch (e) {
+    console.error(e);
+    updateSendStatus('播放失敗');
+  }
+});
+
+document.getElementById('previewBtn').addEventListener('click', async () => {
+  // preview first 8 bits as alternating tones for user to check inaudibility
+  const bits = [0,1,0,1,0,1,0,1];
+  const symbolMs = Number(symRange.value);
+  const buffer = await buildAudioBufferForBits(bits, symbolMs);
+  await playBuffer(buffer);
+});
+
+document.getElementById('stopPlayBtn').addEventListener('click', () => {
+  stopPlayback();
+  updateSendStatus('已停止');
+});
+
+// Receiver controls
+document.getElementById('startRecvBtn').addEventListener('click', async () => {
+  const symbolMs = Number(symRange.value);
+  const threshold = Number(thLabel.textContent);
+  await startReceiver(symbolMs, threshold);
+});
+document.getElementById('stopRecvBtn').addEventListener('click', () => {
+  stopReceiver();
+});
+document.getElementById('clearRecvBtn').addEventListener('click', () => {
+  document.getElementById('receivedText').textContent = '尚未接收';
+  byteBuffer = [];
+  bitBuffer = [];
+  document.getElementById('recvStatus').textContent = '已清除';
+});
+
+// Initialize labels
+document.getElementById('f0Label').textContent = F0;
+document.getElementById('f1Label').textContent = F1;
+symLabel.textContent = DEFAULT_SYMBOL_MS;
+symRange.value = DEFAULT_SYMBOL_MS;
+thRange.value = 2;
+thLabel.textContent = (2/100*0.08).toFixed(3);
+
+// Auto-resume audio context on user gesture for some mobile browsers
+document.body.addEventListener('click', async () => {
+  if (audioCtx && audioCtx.state === 'suspended') try { await audioCtx.resume(); } catch(e){}
+});
+
+// Accessibility: large tap targets already used
+
+/* ---------------------------
+   Notes and limitations (in-code)
+   ---------------------------
+   - This implementation favors simplicity and robustness:
+     * Uses a short preamble (0xAA x2) for symbol sync.
+     * Uses CRC8 to validate frames.
+     * Uses Goertzel on raw time-domain windows for frequency detection.
+     * Debounce requires a small run of identical detections to accept a bit.
+   - Tuning:
+     * 符號時長 (symbolMs) 越短速度越快但錯誤率上升。建議 3~8 ms。
+     * 閾值 (threshold) 影響靈敏度，若環境噪聲高可提高閾值。
+   - 實際效果受手機麥克風/喇叭頻響影響，部分舊機或低端機可能無法穩定播放/接收 20kHz 附近頻率。
+   - 若要改進：
+     * 使用更複雜的同步（例如相位同步、可變符號長度估計）。
+     * 使用 FEC（前向錯誤更正）或重傳機制。
+     * 使用多頻 FSK（多位元每符號）提高速率。
+   --------------------------- */
+</script>
+</body>
+</html>
