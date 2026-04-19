@@ -2,279 +2,262 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>超声波聊天 · 双机版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>声波密聊 · 微信风格</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
         body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            background: #0b0f17;
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #ededed;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 12px;
-            color: #eef2fb;
         }
-        .app-container {
-            max-width: 500px;
+        /* 手机卡片容器 */
+        .phone-frame {
+            max-width: 420px;
             width: 100%;
-            background: rgba(18, 26, 40, 0.9);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 36px;
-            padding: 22px 20px 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(75, 130, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        h1 {
-            font-weight: 500;
-            font-size: 1.9rem;
-            letter-spacing: 1px;
-            text-align: center;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #a0c0ff, #c0e0ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .subtitle {
-            text-align: center;
-            font-size: 0.8rem;
-            opacity: 0.7;
-            margin-bottom: 20px;
-            color: #9bbaff;
-        }
-        .mode-switch {
+            height: 780px;
+            max-height: 95vh;
+            background: #f8f8f8;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
             display: flex;
-            gap: 10px;
-            margin-bottom: 24px;
-            background: #0f1a2b;
-            padding: 6px;
-            border-radius: 60px;
-            border: 1px solid #2a3a55;
+            flex-direction: column;
+            position: relative;
+            border: 1px solid rgba(0,0,0,0.05);
         }
-        .mode-btn {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #b0c7f0;
-            font-weight: 600;
-            font-size: 1.2rem;
-            padding: 12px 0;
-            border-radius: 40px;
-            cursor: pointer;
-            transition: all 0.2s;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-        }
-        .mode-btn.active {
-            background: #2e4b8e;
-            color: white;
-            box-shadow: 0 4px 12px rgba(0, 80, 255, 0.3);
-            border: 1px solid #6a93ff;
-        }
-        .panel {
-            display: none;
-        }
-        .panel.active {
-            display: block;
-        }
-        .card {
-            background: #101b2b;
-            border-radius: 28px;
-            padding: 20px 18px;
-            border: 1px solid #2e4365;
-            box-shadow: inset 0 2px 3px #00000020, 0 8px 12px #00000030;
-        }
-        textarea {
-            width: 100%;
-            background: #050a12;
-            border: 1px solid #3e5a7c;
-            border-radius: 22px;
-            padding: 16px 18px;
-            color: #e2ecff;
-            font-size: 1.1rem;
-            resize: vertical;
-            min-height: 120px;
-            font-family: inherit;
-            margin-bottom: 18px;
-            outline: none;
-            transition: border 0.2s;
-        }
-        textarea:focus {
-            border-color: #5f9eff;
-            box-shadow: 0 0 0 2px #1e3a6b;
-        }
-        .btn-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .btn {
-            background: #1f3a62;
-            border: none;
-            color: white;
-            padding: 14px 20px;
-            border-radius: 48px;
-            font-weight: 600;
-            font-size: 1.1rem;
-            flex: 1;
-            min-width: 120px;
-            cursor: pointer;
-            border: 1px solid #4e7fd1;
-            box-shadow: 0 4px 0 #0c1a2b;
-            transition: all 0.1s;
-            text-align: center;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-        }
-        .btn:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #0c1a2b;
-        }
-        .btn.secondary {
-            background: #1e2c41;
-            border-color: #4a668a;
-            box-shadow: 0 4px 0 #0f1822;
-        }
-        .btn.warning {
-            background: #553322;
-            border-color: #b06a3a;
-        }
-        .status-badge {
-            margin: 16px 0 8px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .led {
-            width: 12px;
-            height: 12px;
-            border-radius: 12px;
-            background: #3a4a6a;
-            box-shadow: 0 0 6px currentColor;
-        }
-        .led.active {
-            background: #3eff9e;
-            box-shadow: 0 0 12px #1eff8e;
-        }
-        .receive-box {
-            background: #03080f;
-            border-radius: 24px;
-            padding: 28px 18px;
-            margin: 16px 0 20px;
-            border: 1px solid #2f4f7a;
-            min-height: 160px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .receive-text {
-            font-size: 2.4rem;
-            font-weight: 700;
-            word-break: break-word;
-            text-align: center;
-            color: #d6e6ff;
-            line-height: 1.4;
-            text-shadow: 0 0 10px #2a6fdb;
-        }
-        .placeholder-text {
-            opacity: 0.5;
-            font-size: 1.5rem;
-        }
-        .freq-indicator {
-            font-family: monospace;
-            background: #0a121f;
-            padding: 6px 14px;
-            border-radius: 30px;
-            display: inline-block;
-            border: 1px dashed #4f7eb0;
-        }
-        .footnote {
-            font-size: 0.7rem;
-            text-align: center;
-            margin-top: 18px;
-            opacity: 0.6;
-        }
-        .flex-row {
+        /* 微信风格头部 */
+        .chat-header {
+            background: #ededed;
+            padding: 12px 16px;
+            border-bottom: 1px solid #d9d9d9;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-        button:disabled {
-            opacity: 0.5;
-            transform: none;
-            pointer-events: none;
+        .chat-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #111;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-icons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .led-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+            background: #ccc;
+            transition: 0.2s;
+        }
+        .led-dot.active {
+            background: #34c759;
+            box-shadow: 0 0 6px #34c759;
+        }
+        .signal-area {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            color: #555;
+        }
+        meter {
+            width: 50px;
+            height: 6px;
+        }
+        /* 聊天记录区域 */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 12px;
+            background: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        /* 气泡行 */
+        .message-row {
+            display: flex;
+            margin-bottom: 4px;
+        }
+        .message-row.left {
+            justify-content: flex-start;
+        }
+        .message-row.right {
+            justify-content: flex-end;
+        }
+        .bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 1rem;
+            line-height: 1.4;
+            word-break: break-word;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .left .bubble {
+            background: white;
+            border-top-left-radius: 4px;
+            color: #111;
+        }
+        .right .bubble {
+            background: #d1f0c5;  /* 微信绿气泡 */
+            border-top-right-radius: 4px;
+            color: #111;
+        }
+        .time-tag {
+            font-size: 0.65rem;
+            color: #888;
+            margin-top: 4px;
+            padding-left: 8px;
+        }
+        /* 底部输入区 */
+        .chat-footer {
+            background: #f6f6f6;
+            border-top: 1px solid #d9d9d9;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .input-wrapper {
+            flex: 1;
+            background: white;
+            border-radius: 24px;
+            border: 1px solid #e2e2e2;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+        }
+        .input-wrapper input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            background: transparent;
+            padding: 4px 0;
+        }
+        .action-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.6rem;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 24px;
+            color: #07c160;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .action-btn:active {
+            background: #e0e0e0;
+        }
+        .action-btn.mic-off {
+            color: #fa5151;
+        }
+        /* 设置栏 (可折叠) */
+        .settings-bar {
+            background: #fafafa;
+            padding: 6px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+        }
+        .key-input-small {
+            border: 1px solid #ccc;
+            border-radius: 16px;
+            padding: 4px 10px;
+            width: 130px;
+            font-size: 0.75rem;
+            background: white;
+        }
+        .small-btn {
+            background: #e9e9e9;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        .debug-text {
+            font-size: 0.6rem;
+            color: #888;
+            text-align: center;
+            padding: 4px;
+            background: #e5e5e5;
         }
     </style>
 </head>
 <body>
-<div class="app-container">
-    <h1>⌇超声波·传音⌇</h1>
-    <div class="subtitle">19000Hz ~ 20500Hz · FSK</div>
-
-    <!-- 模式切换 -->
-    <div class="mode-switch">
-        <button class="mode-btn active" data-mode="send">📤 发送模式</button>
-        <button class="mode-btn" data-mode="receive">📥 接收模式</button>
-    </div>
-
-    <!-- 发送面板 -->
-    <div id="sendPanel" class="panel active">
-        <div class="card">
-            <textarea id="messageInput" placeholder="输入文字 (中英文/数字/符号) ..." maxlength="120">你好，超声波！</textarea>
-            <div class="btn-group">
-                <button class="btn" id="sendBtn">🔊 发送超声波</button>
-                <button class="btn secondary" id="stopSendBtn">⏹️ 停止</button>
+<div class="phone-frame">
+    <!-- 微信风格头部 -->
+    <div class="chat-header">
+        <h2>
+            <span>🔊 声波密聊</span>
+        </h2>
+        <div class="status-icons">
+            <div class="signal-area">
+                <span>📶</span>
+                <meter id="signalMeter" min="0" max="100" low="30" high="60" value="0"></meter>
             </div>
-            <div class="status-badge">
-                <span class="led" id="sendLed"></span>
-                <span id="sendStatus">准备就绪</span>
-            </div>
-            <div class="freq-indicator">
-                ⚡ FSK: 19200Hz(0) / 20000Hz(1) · 符号8ms
-            </div>
-            <div style="margin-top: 12px; font-size:0.85rem; opacity:0.8;">
-                📱 将另一台手机调至“接收模式”，距离2~5米
-            </div>
+            <span class="led-dot" id="micLed" title="麦克风状态"></span>
+            <span class="led-dot" id="txLed" title="发送状态"></span>
         </div>
     </div>
 
-    <!-- 接收面板 -->
-    <div id="receivePanel" class="panel">
-        <div class="card">
-            <div class="flex-row">
-                <span style="font-weight:500;">🎤 超声波监听</span>
-                <span class="led" id="recLed"></span>
-            </div>
-            <div class="receive-box">
-                <div class="receive-text" id="receivedMessage">⚡ 等待声波</div>
-            </div>
-            <div class="btn-group">
-                <button class="btn" id="startListenBtn">🎧 开始监听</button>
-                <button class="btn secondary" id="stopListenBtn">⏸️ 停止</button>
-                <button class="btn warning" id="clearRecBtn">🧹 清屏</button>
-            </div>
-            <div class="status-badge">
-                <span>📶 信号强度</span>
-                <meter id="signalMeter" min="0" max="100" value="0" low="20" high="60" optimum="80" style="flex:1; height:10px;"></meter>
-            </div>
-            <div id="recStats" class="freq-indicator" style="margin-top:10px;">
-                就绪 · 采样率48k/FFT4096
-            </div>
-            <div style="margin-top:10px; font-size:0.8rem; text-align:center;">
-                🔊 请保持安静，解码内容自动显示
-            </div>
+    <!-- 密钥与设置条 (简洁) -->
+    <div class="settings-bar">
+        <div style="display:flex; align-items:center; gap:6px;">
+            <span>🔐</span>
+            <input type="text" id="secretKeyInput" class="key-input-small" value="s_chat_2026" maxlength="16" placeholder="密钥">
+        </div>
+        <div>
+            <button class="small-btn" id="resetKeyBtn">🔄 随机</button>
+            <button class="small-btn" id="clearChatBtn">🧹 清屏</button>
         </div>
     </div>
-    <div class="footnote">
-        纯前端 · Web Audio API · 双机超声波聊天 · 无需网络
+
+    <!-- 聊天消息列表 -->
+    <div id="chatMessages" class="chat-messages">
+        <!-- 初始欢迎气泡 -->
+        <div class="message-row left">
+            <div class="bubble">✨ 声波已就绪<br>双方密钥一致即可密聊</div>
+        </div>
+        <div class="message-row left">
+            <div class="bubble">点击🎤开始监听，输入文字发送</div>
+        </div>
+    </div>
+
+    <!-- 底部输入区 -->
+    <div class="chat-footer">
+        <button class="action-btn" id="toggleMicBtn" title="切换麦克风">🎤</button>
+        <div class="input-wrapper">
+            <input type="text" id="messageInput" placeholder="输入消息..." maxlength="100" value="你好！">
+        </div>
+        <button class="action-btn" id="sendBtn" style="font-size:1.4rem;">📤</button>
+    </div>
+
+    <!-- 极简调试信息 -->
+    <div class="debug-text" id="debugInfo">
+        载波20.2kHz · 同时收发 · 加密OOK
     </div>
 </div>
 
@@ -282,433 +265,373 @@
     (function(){
         "use strict";
 
-        // ---------- 全局参数 ----------
-        const SAMPLE_RATE = 48000;              // 推荐48k (实际以AudioContext为准)
-        const FSK_FREQ_0 = 19200;               // 代表 bit 0
-        const FSK_FREQ_1 = 20000;               // 代表 bit 1
-        const SYMBOL_DURATION = 0.008;           // 8ms 每符号, 兼顾速度与抗噪
-        // 协议帧: [前导 16bit 0xAAAA] + [同步字 0xE5 (8bit)] + [长度 8bit] + [数据] + [校验和 8bit]
-        const PREAMBLE_BITS = 16;
-        const PREAMBLE_PATTERN = 0xAAAA;          // 1010 1010 1010 1010
-        const SYNC_WORD = 0xE5;                  // 11100101
-
-        // ---------- 全局变量 ----------
+        // ---------- 参数 ----------
+        const CARRIER_FREQ = 20200;
+        const SYMBOL_RATE = 125;
+        
+        const PREAMBLE_BITS = 32;
+        const PREAMBLE = 0xAAAAAAAA;
+        const SYNC_WORD = 0xE4C7;
+        
+        let secretKey = "s_chat_2026";
+        
+        // 全局变量
         let audioCtx = null;
+        let isMicActive = false;
         let isSending = false;
-        let isListening = false;
         let mediaStream = null;
-        let sourceNode = null;       // 麦克风源
+        let sourceNode = null;
         let analyser = null;
-        let animationFrame = null;
+        let scriptProcessor = null;
         
-        // 接收解码状态机
-        let decoderState = 'IDLE';    // IDLE, PREAMBLE_SEARCH, RECEIVING
-        let bitBuffer = [];           // 存储解码比特 (0/1)
-        let preambleMatched = false;
-        let sampleCounter = 0;
-        let lastBitDecision = -1;
-        let bitPhase = 0;            // 用于软时钟恢复
-        let fftData = null;
-        
-        // 接收统计
-        let signalLevel = 0;
-        let lastReceivedText = '';
+        let rxState = 'IDLE';
+        let rxBuffer = [];
+        let noiseFloor = 0.005;
+        let signalPeak = 0.01;
         
         // UI元素
-        const sendPanel = document.getElementById('sendPanel');
-        const recPanel = document.getElementById('receivePanel');
-        const modeBtns = document.querySelectorAll('.mode-btn');
-        const msgInput = document.getElementById('messageInput');
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
-        const stopSendBtn = document.getElementById('stopSendBtn');
-        const sendLed = document.getElementById('sendLed');
-        const sendStatus = document.getElementById('sendStatus');
-        const startListenBtn = document.getElementById('startListenBtn');
-        const stopListenBtn = document.getElementById('stopListenBtn');
-        const clearRecBtn = document.getElementById('clearRecBtn');
-        const recLed = document.getElementById('recLed');
-        const receivedMsgDiv = document.getElementById('receivedMessage');
+        const toggleMicBtn = document.getElementById('toggleMicBtn');
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        const resetKeyBtn = document.getElementById('resetKeyBtn');
+        const secretKeyInput = document.getElementById('secretKeyInput');
+        const micLed = document.getElementById('micLed');
+        const txLed = document.getElementById('txLed');
         const signalMeter = document.getElementById('signalMeter');
-        const recStats = document.getElementById('recStats');
-
-        // ---------- 辅助函数 ----------
-        function updateModeUI() {
-            const activeMode = document.querySelector('.mode-btn.active').dataset.mode;
-            if (activeMode === 'send') {
-                sendPanel.classList.add('active');
-                recPanel.classList.remove('active');
-            } else {
-                sendPanel.classList.remove('active');
-                recPanel.classList.add('active');
+        const debugInfo = document.getElementById('debugInfo');
+        
+        // 辅助函数
+        function stringToBytes(str) { return new TextEncoder().encode(str); }
+        function bytesToString(bytes) { return new TextDecoder('utf-8').decode(bytes); }
+        
+        function cryptBytes(data, key) {
+            const keyBytes = stringToBytes(key);
+            if (keyBytes.length === 0) return data;
+            const result = new Uint8Array(data.length);
+            for (let i=0; i<data.length; i++) result[i] = data[i] ^ keyBytes[i % keyBytes.length];
+            return result;
+        }
+        
+        function crc8(data) {
+            let crc = 0xFF;
+            for (let byte of data) {
+                crc ^= byte;
+                for (let i=0; i<8; i++) crc = (crc & 0x80) ? ((crc << 1) ^ 0x1D) : (crc << 1);
             }
+            return crc & 0xFF;
         }
-        modeBtns.forEach(btn => btn.addEventListener('click', (e) => {
-            modeBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            updateModeUI();
-        }));
-
-        // 初始化音频上下文 (懒加载)
-        async function ensureAudioContext() {
-            if (audioCtx && audioCtx.state !== 'closed') return audioCtx;
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
-            // 实际采样率可能不同，但没关系
-            return audioCtx;
-        }
-
-        // 关闭音频上下文释放资源
-        function closeAudioContext() {
-            if (audioCtx) {
-                audioCtx.close();
-                audioCtx = null;
+        
+        // 构建发送比特流 (加密 + 曼彻斯特)
+        function buildPacket(text, key) {
+            let dataBytes = stringToBytes(text);
+            if (dataBytes.length > 200) throw new Error('消息过长');
+            dataBytes = cryptBytes(dataBytes, key);
+            const length = dataBytes.length;
+            const crc = crc8(dataBytes);
+            
+            const bits = [];
+            for (let i=31; i>=0; i--) bits.push((PREAMBLE >>> i) & 1);
+            for (let i=15; i>=0; i--) bits.push((SYNC_WORD >>> i) & 1);
+            for (let i=7; i>=0; i--) bits.push((length >>> i) & 1);
+            for (let b of dataBytes) for (let i=7; i>=0; i--) bits.push((b >>> i) & 1);
+            for (let i=7; i>=0; i--) bits.push((crc >>> i) & 1);
+            
+            // 曼彻斯特: 1->10, 0->01
+            const manchester = [];
+            for (let bit of bits) {
+                if (bit === 1) { manchester.push(1,0); }
+                else { manchester.push(0,1); }
             }
+            return manchester;
         }
-
-        // ---------- 发送端: 合成FSK波形 ----------
-        function generateFSKBuffer(bitArray) {
-            // bitArray: 0/1 数组
-            const samplesPerSymbol = Math.floor(audioCtx.sampleRate * SYMBOL_DURATION);
-            const totalSamples = bitArray.length * samplesPerSymbol;
-            const buffer = audioCtx.createBuffer(1, totalSamples, audioCtx.sampleRate);
-            const channelData = buffer.getChannelData(0);
+        
+        function generateOOKBuffer(manchesterBits) {
+            const sampleRate = audioCtx.sampleRate;
+            const samplesPerBit = Math.floor(sampleRate / SYMBOL_RATE);
+            const samplesPerChip = Math.floor(samplesPerBit / 2);
+            const totalSamples = manchesterBits.length * samplesPerChip;
+            const buffer = audioCtx.createBuffer(1, totalSamples, sampleRate);
+            const data = buffer.getChannelData(0);
+            const delta = 2 * Math.PI * CARRIER_FREQ / sampleRate;
+            let phase = 0, idx = 0;
+            const fadeLen = Math.min(200, Math.floor(totalSamples * 0.02));
             
-            let phase0 = 0, phase1 = 0;
-            const delta0 = 2 * Math.PI * FSK_FREQ_0 / audioCtx.sampleRate;
-            const delta1 = 2 * Math.PI * FSK_FREQ_1 / audioCtx.sampleRate;
-            
-            let sampleIdx = 0;
-            for (let i = 0; i < bitArray.length; i++) {
-                const bit = bitArray[i];
-                const freqDelta = bit === 0 ? delta0 : delta1;
-                let phase = (bit === 0) ? phase0 : phase1;
-                
-                for (let j = 0; j < samplesPerSymbol; j++) {
-                    // 轻微包络整形 (减少咔嚓声)
-                    const envelope = 1.0;
-                    channelData[sampleIdx] = Math.sin(phase) * envelope * 0.9; // 幅度稍降避免削波
-                    phase += freqDelta;
-                    sampleIdx++;
+            for (let chip of manchesterBits) {
+                const amp = chip ? 0.85 : 0.0;
+                for (let j=0; j<samplesPerChip; j++) {
+                    let sample = chip ? Math.sin(phase) * amp : 0;
+                    if (chip) phase += delta;
+                    let env = 1.0;
+                    if (idx < fadeLen) env = idx / fadeLen;
+                    else if (idx > totalSamples - fadeLen) env = (totalSamples - idx) / fadeLen;
+                    data[idx] = sample * env;
+                    idx++;
                 }
-                // 保存相位保证连续性
-                if (bit === 0) phase0 = phase;
-                else phase1 = phase;
             }
             return buffer;
         }
-
-        // 将字符串转为比特流 (含协议包装)
-        function textToBitStream(text) {
-            const encoder = new TextEncoder();
-            const dataBytes = encoder.encode(text);
-            if (dataBytes.length > 255) throw new Error('文本过长(>255字节)');
+        
+        // 添加气泡到聊天区
+        function addMessageBubble(text, isSelf = true) {
+            const row = document.createElement('div');
+            row.className = `message-row ${isSelf ? 'right' : 'left'}`;
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = text;
+            row.appendChild(bubble);
             
-            const payloadLength = dataBytes.length;
-            // 计算校验和 (简单异或)
-            let checksum = 0;
-            for (let b of dataBytes) checksum ^= b;
+            // 可选时间戳
+            const time = document.createElement('div');
+            time.className = 'time-tag';
+            const now = new Date();
+            time.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            row.appendChild(time);
             
-            // 构造比特数组: 前导(16) + 同步字(8) + 长度(8) + 数据 + 校验(8)
-            const bits = [];
-            
-            // 前导 0xAAAA (1010 1010 1010 1010)  高位先发
-            for (let i = 15; i >= 0; i--) {
-                bits.push((PREAMBLE_PATTERN >> i) & 1);
-            }
-            // 同步字
-            for (let i = 7; i >= 0; i--) bits.push((SYNC_WORD >> i) & 1);
-            // 长度
-            for (let i = 7; i >= 0; i--) bits.push((payloadLength >> i) & 1);
-            // 数据字节
-            for (let byte of dataBytes) {
-                for (let i = 7; i >= 0; i--) bits.push((byte >> i) & 1);
-            }
-            // 校验和
-            for (let i = 7; i >= 0; i--) bits.push((checksum >> i) & 1);
-            
-            return bits;
+            chatMessages.appendChild(row);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
-
-        async function sendUltrasonic() {
+        
+        // 发送消息 (UI + 超声波)
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
             if (isSending) return;
-            const text = msgInput.value.trim();
-            if (!text) {
-                sendStatus.innerText = '请输入文字';
-                return;
-            }
+            
+            // 先显示自己气泡
+            addMessageBubble(text, true);
+            messageInput.value = '';
+            
             try {
-                await ensureAudioContext();
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
                 if (audioCtx.state === 'suspended') await audioCtx.resume();
                 
-                const bits = textToBitStream(text);
-                const buffer = generateFSKBuffer(bits);
+                const key = secretKeyInput.value || "default";
+                const manchester = buildPacket(text, key);
+                const buffer = generateOOKBuffer(manchester);
                 
-                // 播放
                 const source = audioCtx.createBufferSource();
                 source.buffer = buffer;
                 source.connect(audioCtx.destination);
+                
+                isSending = true;
+                txLed.classList.add('active');
+                sendBtn.disabled = true;
+                
                 source.onended = () => {
                     isSending = false;
-                    sendLed.classList.remove('active');
-                    sendStatus.innerText = '发送完成 ✓';
+                    txLed.classList.remove('active');
                     sendBtn.disabled = false;
                 };
                 source.start();
-                isSending = true;
-                sendLed.classList.add('active');
-                sendStatus.innerText = `正在发送... ${bits.length} 符号, 约${(bits.length*SYMBOL_DURATION).toFixed(1)}秒`;
-                sendBtn.disabled = true;
+                setTimeout(() => {
+                    if (isSending) {
+                        isSending = false;
+                        txLed.classList.remove('active');
+                        sendBtn.disabled = false;
+                    }
+                }, buffer.duration * 1000 + 100);
                 
-                // 自动恢复按钮
-                setTimeout(() => { if (!isSending) sendBtn.disabled = false; }, bits.length*SYMBOL_DURATION*1000+200);
+                debugInfo.innerText = `📤 发送: ${text}`;
             } catch(e) {
-                sendStatus.innerText = '错误: ' + e.message;
+                alert('发送失败: ' + e.message);
                 isSending = false;
-                sendLed.classList.remove('active');
+                txLed.classList.remove('active');
                 sendBtn.disabled = false;
             }
         }
-
-        function stopSending() {
-            if (audioCtx && isSending) {
-                audioCtx.close().then(() => {
-                    audioCtx = null;
-                    isSending = false;
-                    sendLed.classList.remove('active');
-                    sendStatus.innerText = '已停止';
-                    sendBtn.disabled = false;
-                });
-            } else {
-                if (audioCtx) audioCtx.close();
-                audioCtx = null;
-                isSending = false;
-                sendLed.classList.remove('active');
-                sendStatus.innerText = '已停止';
-                sendBtn.disabled = false;
+        
+        // 接收处理 (曼彻斯特解码 + 协议)
+        let manchesterPair = [];
+        function processChip(chip) {
+            manchesterPair.push(chip);
+            if (manchesterPair.length < 2) return;
+            const [c1, c2] = manchesterPair;
+            manchesterPair = [];
+            
+            let bit = -1;
+            if (c1 === 1 && c2 === 0) bit = 1;
+            else if (c1 === 0 && c2 === 1) bit = 0;
+            else return;
+            
+            if (rxState === 'IDLE') {
+                rxBuffer.push(bit);
+                if (rxBuffer.length > 64) rxBuffer.shift();
+                if (rxBuffer.length >= 32) {
+                    let val = 0;
+                    for (let i=0; i<32; i++) val = (val<<1) | rxBuffer[rxBuffer.length-32+i];
+                    if (val === PREAMBLE) {
+                        rxState = 'SYNCING';
+                        rxBuffer = [];
+                        debugInfo.innerText = '🔗 前导锁定';
+                    }
+                }
+            } else if (rxState === 'SYNCING') {
+                rxBuffer.push(bit);
+                if (rxBuffer.length >= 16) {
+                    let sync = 0;
+                    for (let i=0; i<16; i++) sync = (sync<<1) | rxBuffer[i];
+                    if (sync === SYNC_WORD) {
+                        rxState = 'RECEIVING';
+                        rxBuffer = rxBuffer.slice(16);
+                    } else {
+                        rxState = 'IDLE';
+                        rxBuffer = [];
+                    }
+                }
+            } else if (rxState === 'RECEIVING') {
+                rxBuffer.push(bit);
+                if (rxBuffer.length >= 8) {
+                    let len = 0;
+                    for (let i=0; i<8; i++) len = (len<<1) | rxBuffer[i];
+                    if (len > 200) { rxState='IDLE'; rxBuffer=[]; return; }
+                    const totalBits = 8 + len*8 + 8;
+                    if (rxBuffer.length >= totalBits) {
+                        const dataBits = rxBuffer.slice(8, 8+len*8);
+                        const dataBytes = [];
+                        for (let i=0; i<len; i++) {
+                            let b=0;
+                            for (let j=0; j<8; j++) b = (b<<1) | dataBits[i*8+j];
+                            dataBytes.push(b);
+                        }
+                        let crcRx = 0;
+                        for (let i=0; i<8; i++) crcRx = (crcRx<<1) | rxBuffer[8+len*8+i];
+                        
+                        if (crcRx === crc8(new Uint8Array(dataBytes))) {
+                            const key = secretKeyInput.value || "default";
+                            const decrypted = cryptBytes(new Uint8Array(dataBytes), key);
+                            try {
+                                const text = bytesToString(decrypted);
+                                addMessageBubble(text, false);
+                                debugInfo.innerText = `📥 收到: ${text}`;
+                            } catch(e) { debugInfo.innerText = '解密失败'; }
+                        } else { debugInfo.innerText = 'CRC错误'; }
+                        rxState = 'IDLE';
+                        rxBuffer = [];
+                    }
+                }
             }
         }
-
-        // ---------- 接收端: FFT 解调 ----------
-        async function startListening() {
-            if (isListening) return;
+        
+        // 开始监听
+        async function startMicrophone() {
+            if (isMicActive) return;
             try {
-                await ensureAudioContext();
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                await audioCtx.resume();
                 
-                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+                mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
+                });
                 sourceNode = audioCtx.createMediaStreamSource(mediaStream);
                 analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 4096;
-                analyser.smoothingTimeConstant = 0.1;  // 轻微平滑
+                analyser.fftSize = 2048;
+                analyser.smoothingTimeConstant = 0.2;
+                
+                scriptProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
                 sourceNode.connect(analyser);
-                // 可选：不连接destination避免回声
+                sourceNode.connect(scriptProcessor);
+                scriptProcessor.connect(audioCtx.destination);
                 
-                isListening = true;
-                recLed.classList.add('active');
-                startListenBtn.disabled = true;
-                recStats.innerText = `监听中 · FFT ${analyser.fftSize} · 采样率${audioCtx.sampleRate}Hz`;
+                rxState = 'IDLE';
+                rxBuffer = [];
+                noiseFloor = 0.005;
+                signalPeak = 0.01;
                 
-                // 重置解码状态
-                decoderState = 'IDLE';
-                bitBuffer = [];
-                preambleMatched = false;
+                const freqData = new Float32Array(analyser.frequencyBinCount);
+                const sampleRate = audioCtx.sampleRate;
+                const chipSamplesTarget = Math.floor(sampleRate / (SYMBOL_RATE * 2));
+                let chipAcc = { count: 0, energySum: 0 };
                 
-                const bufferLength = analyser.frequencyBinCount;
-                fftData = new Float32Array(bufferLength);
-                
-                function decodeLoop() {
-                    if (!isListening) return;
+                scriptProcessor.onaudioprocess = (e) => {
+                    const input = e.inputBuffer.getChannelData(0);
+                    let sum = 0;
+                    for (let i=0; i<input.length; i++) sum += Math.abs(input[i]);
+                    const instantEnergy = sum / input.length;
                     
-                    analyser.getFloatFrequencyData(fftData);
+                    if (instantEnergy < noiseFloor * 1.5) noiseFloor = 0.95*noiseFloor + 0.05*instantEnergy;
+                    else noiseFloor = 0.995*noiseFloor + 0.005*instantEnergy;
+                    signalPeak = Math.max(instantEnergy, signalPeak*0.999);
+                    const threshold = noiseFloor * 2.5 + 0.002;
                     
-                    // 计算两个频点的能量 (转为线性幅度)
-                    const binWidth = audioCtx.sampleRate / analyser.fftSize;
-                    const idx0 = Math.round(FSK_FREQ_0 / binWidth);
-                    const idx1 = Math.round(FSK_FREQ_1 / binWidth);
+                    const percent = Math.min(100, Math.round((instantEnergy/(signalPeak+0.001))*120));
+                    signalMeter.value = percent;
                     
-                    // 取附近3个bin最大值 (抗频偏)
-                    let mag0 = -Infinity, mag1 = -Infinity;
-                    for (let d = -1; d <= 1; d++) {
-                        const i0 = Math.min(fftData.length-1, Math.max(0, idx0+d));
-                        const i1 = Math.min(fftData.length-1, Math.max(0, idx1+d));
-                        mag0 = Math.max(mag0, fftData[i0]);
-                        mag1 = Math.max(mag1, fftData[i1]);
+                    chipAcc.count += input.length;
+                    chipAcc.energySum += instantEnergy * input.length;
+                    
+                    while (chipAcc.count >= chipSamplesTarget) {
+                        const avgEnergy = chipAcc.energySum / chipAcc.count;
+                        const chip = (avgEnergy > threshold) ? 1 : 0;
+                        processChip(chip);
+                        chipAcc.count -= chipSamplesTarget;
+                        chipAcc.energySum = 0;
                     }
-                    // 转换dB到线性 (0dB = 满幅? 但FloatFrequencyData范围通常-100..0)
-                    const linear0 = Math.pow(10, mag0 / 20);
-                    const linear1 = Math.pow(10, mag1 / 20);
-                    const maxLinear = Math.max(linear0, linear1);
-                    
-                    // 信号强度 (用于显示)
-                    signalLevel = Math.min(100, Math.max(0, Math.round((maxLinear * 80) + 20)));
-                    signalMeter.value = signalLevel;
-                    
-                    // 阈值: 如果能量太低，忽略
-                    const THRESHOLD = 0.008; 
-                    let currentBit = -1;
-                    if (maxLinear > THRESHOLD) {
-                        currentBit = (linear1 > linear0) ? 1 : 0;
-                    }
-                    
-                    // 状态机: 简单的时钟恢复 —— 基于符号时长的计数
-                    const samplesPerSymbolEst = Math.round(audioCtx.sampleRate * SYMBOL_DURATION / (analyser.fftSize/2)); // 近似每次analyser更新的样本跨度
-                    // 更稳健: 使用基于帧的软计数器
-                    
-                    // 简化但有效的解码: 使用去抖+滑动窗 (适合演示)
-                    // 我们采用连续相同bit判定，配合前导检测
-                    if (currentBit !== -1) {
-                        // 简单去抖: 需要连续两次相同?
-                        if (decoderState === 'IDLE') {
-                            // 寻找前导特征: 连续的01交替
-                            bitBuffer.push(currentBit);
-                            if (bitBuffer.length > 32) bitBuffer.shift();
-                            // 检测前导 101010... 至少匹配14个
-                            const pat = [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0];
-                            let match = 0;
-                            for (let i=0; i<16 && i<bitBuffer.length; i++) {
-                                if (bitBuffer[bitBuffer.length-1-i] === pat[15-i]) match++;
-                            }
-                            if (match >= 14) {
-                                decoderState = 'PREAMBLE_FOUND';
-                                bitBuffer = []; // 清空准备接收数据
-                                preambleMatched = true;
-                                recStats.innerText = '🔍 前导检测到，同步中...';
-                            }
-                        } else {
-                            // 已同步，收集比特 (使用基于符号率的抽取)
-                            // 简单起见: 每帧都可能会产生一个bit，但会导致过采样。我们用计数器抽取
-                            // 改用固定抽取因子: 大约每(SYMBOL_DURATION * sampleRate / hopSize)帧取一次
-                            if (!window._symbolSkipCounter) window._symbolSkipCounter = 0;
-                            const hopSize = analyser.fftSize / 2; // 典型重叠
-                            const framesPerSymbol = Math.max(1, Math.round(audioCtx.sampleRate * SYMBOL_DURATION / hopSize));
-                            window._symbolSkipCounter = (window._symbolSkipCounter || 0) + 1;
-                            if (window._symbolSkipCounter >= framesPerSymbol) {
-                                window._symbolSkipCounter = 0;
-                                // 采样判决
-                                bitBuffer.push(currentBit);
-                                
-                                // 当收集足够比特开始解析帧
-                                if (bitBuffer.length >= 8) {
-                                    tryParseFrame();
-                                }
-                            }
-                        }
-                    } else {
-                        // 无信号时逐渐重置
-                        if (decoderState !== 'IDLE') {
-                            // 超时重置
-                            if (!window._lostTimer) window._lostTimer = 0;
-                            window._lostTimer++;
-                            if (window._lostTimer > 15) {
-                                decoderState = 'IDLE';
-                                bitBuffer = [];
-                                recStats.innerText = '监听中 · 等待前导';
-                                window._lostTimer = 0;
-                            }
-                        } else { window._lostTimer = 0; }
-                    }
-                    
-                    animationFrame = requestAnimationFrame(decodeLoop);
-                }
+                    analyser.getFloatFrequencyData(freqData);
+                };
                 
-                // 帧解析
-                function tryParseFrame() {
-                    if (bitBuffer.length < 40) return; // 至少前导+同步+长度
-                    // 查找同步字0xE5 (11100101) 的位置
-                    let syncPos = -1;
-                    for (let i=0; i<bitBuffer.length-7; i++) {
-                        let val = 0;
-                        for (let j=0; j<8; j++) val = (val<<1) | bitBuffer[i+j];
-                        if (val === SYNC_WORD) { syncPos = i; break; }
-                    }
-                    if (syncPos === -1) return;
-                    
-                    const startIdx = syncPos + 8; // 长度字段开始
-                    if (bitBuffer.length < startIdx + 8) return;
-                    let len = 0;
-                    for (let i=0; i<8; i++) len = (len<<1) | bitBuffer[startIdx+i];
-                    if (len > 255) { bitBuffer = []; return; } // 无效
-                    
-                    const totalBitsNeeded = startIdx + 8 + len*8 + 8; // +校验
-                    if (bitBuffer.length < totalBitsNeeded) return;
-                    
-                    // 提取数据
-                    const dataBits = bitBuffer.slice(startIdx+8, startIdx+8+len*8);
-                    const dataBytes = [];
-                    for (let i=0; i<len; i++) {
-                        let b = 0;
-                        for (let j=0; j<8; j++) b = (b<<1) | dataBits[i*8+j];
-                        dataBytes.push(b);
-                    }
-                    // 校验
-                    let checksum = 0;
-                    for (let i=0; i<8; i++) checksum = (checksum<<1) | bitBuffer[startIdx+8+len*8+i];
-                    let calc = 0;
-                    for (let b of dataBytes) calc ^= b;
-                    if (calc !== checksum) { 
-                        recStats.innerText = '校验错误，丢弃'; 
-                        bitBuffer = bitBuffer.slice(totalBitsNeeded); 
-                        return; 
-                    }
-                    
-                    // 解码文本
-                    try {
-                        const decoder = new TextDecoder('utf-8');
-                        const text = decoder.decode(new Uint8Array(dataBytes));
-                        lastReceivedText = text;
-                        receivedMsgDiv.innerText = text;
-                        recStats.innerText = `✓ 解码成功 (${len}字节)`;
-                    } catch(e) { receivedMsgDiv.innerText = '?解码错误'; }
-                    
-                    // 清空已用比特
-                    bitBuffer = bitBuffer.slice(totalBitsNeeded);
-                    decoderState = 'IDLE'; // 重新等待下一个包
-                }
-                
-                decodeLoop();
-                
+                isMicActive = true;
+                micLed.classList.add('active');
+                toggleMicBtn.innerHTML = '🎤<span style="font-size:0.6rem; margin-left:2px;">⏸️</span>';
+                toggleMicBtn.classList.remove('mic-off');
+                debugInfo.innerText = '🎤 监听中 · 自适应阈值';
             } catch(e) {
-                alert('无法访问麦克风: ' + e.message);
-                isListening = false;
-                recLed.classList.remove('active');
-                startListenBtn.disabled = false;
+                alert('麦克风权限未授予');
+                isMicActive = false;
             }
         }
-
-        function stopListening() {
-            isListening = false;
-            if (animationFrame) cancelAnimationFrame(animationFrame);
+        
+        function stopMicrophone() {
+            if (!isMicActive) return;
+            isMicActive = false;
+            micLed.classList.remove('active');
+            toggleMicBtn.innerHTML = '🎤';
+            toggleMicBtn.classList.add('mic-off');
+            if (scriptProcessor) scriptProcessor.disconnect();
             if (sourceNode) sourceNode.disconnect();
             if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
-            if (audioCtx) { audioCtx.close(); audioCtx = null; }
-            sourceNode = null; analyser = null; mediaStream = null;
-            recLed.classList.remove('active');
-            startListenBtn.disabled = false;
-            recStats.innerText = '监听已停止';
+            analyser = null; scriptProcessor = null;
             signalMeter.value = 0;
+            debugInfo.innerText = '监听已停止';
         }
-
-        // 清屏
-        function clearReceived() {
-            receivedMsgDiv.innerText = '⚡ 等待声波';
-            lastReceivedText = '';
-        }
-
-        // ---------- 绑定事件 ----------
-        sendBtn.addEventListener('click', sendUltrasonic);
-        stopSendBtn.addEventListener('click', stopSending);
-        startListenBtn.addEventListener('click', startListening);
-        stopListenBtn.addEventListener('click', stopListening);
-        clearRecBtn.addEventListener('click', clearReceived);
         
-        // 页面卸载时释放资源
+        async function toggleMic() {
+            if (isMicActive) stopMicrophone();
+            else await startMicrophone();
+        }
+        
+        function clearChat() {
+            chatMessages.innerHTML = '';
+            addMessageBubble('✨ 聊天记录已清空', false);
+        }
+        
+        function resetKey() {
+            const rand = Math.random().toString(36).substring(2,10);
+            secretKeyInput.value = 'key_'+rand;
+        }
+        
+        // 绑定事件
+        sendBtn.addEventListener('click', sendMessage);
+        toggleMicBtn.addEventListener('click', toggleMic);
+        clearChatBtn.addEventListener('click', clearChat);
+        resetKeyBtn.addEventListener('click', resetKey);
+        messageInput.addEventListener('keypress', (e) => { if(e.key==='Enter') sendMessage(); });
+        
         window.addEventListener('beforeunload', () => {
-            if (isListening) stopListening();
-            if (isSending) stopSending();
+            if (isMicActive) stopMicrophone();
+            if (audioCtx) audioCtx.close();
         });
-
-        // 初始化UI
-        updateModeUI();
-        // 预检查音频权限提示
+        
+        // 初始化音频上下文
+        document.body.addEventListener('touchstart', ()=>{
+            if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+        }, {once:true});
+        
+        secretKeyInput.value = secretKey;
+        debugInfo.innerText = '点击🎤开始监听';
     })();
 </script>
 </body>
