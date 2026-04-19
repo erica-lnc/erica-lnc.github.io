@@ -3,38 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>声波密聊 · 微信风格</title>
+    <title>声波密聊 · 微信版</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: #ededed;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background: #e5e5e5;
             height: 100vh;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
         }
-        /* 手机卡片容器 */
-        .phone-frame {
+        .phone {
             max-width: 420px;
             width: 100%;
             height: 780px;
             max-height: 95vh;
             background: #f8f8f8;
             border-radius: 32px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1);
-            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
             display: flex;
             flex-direction: column;
-            position: relative;
-            border: 1px solid rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid #ccc;
         }
-        /* 微信风格头部 */
-        .chat-header {
+        /* 头部 */
+        .header {
             background: #ededed;
             padding: 12px 16px;
             border-bottom: 1px solid #d9d9d9;
@@ -42,63 +36,68 @@
             align-items: center;
             justify-content: space-between;
         }
-        .chat-header h2 {
-            font-size: 1.2rem;
+        .header h3 {
             font-weight: 600;
-            color: #111;
-            letter-spacing: 0.3px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .status-icons {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-        .led-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 10px;
-            background: #ccc;
-            transition: 0.2s;
-        }
-        .led-dot.active {
-            background: #34c759;
-            box-shadow: 0 0 6px #34c759;
-        }
-        .signal-area {
+            font-size: 1.2rem;
             display: flex;
             align-items: center;
             gap: 4px;
+        }
+        .status-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .led {
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+            background: #bbb;
+        }
+        .led.active { background: #34c759; box-shadow: 0 0 6px #34c759; }
+        meter { width: 50px; height: 6px; }
+        /* 设置条 */
+        .key-bar {
+            background: #f0f0f0;
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.75rem;
+        }
+        .key-bar input {
+            flex: 1;
+            border: 1px solid #ccc;
+            border-radius: 16px;
+            padding: 6px 12px;
+            background: white;
+            font-size: 0.75rem;
+        }
+        .small-btn {
+            background: #e0e0e0;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 20px;
             font-size: 0.7rem;
-            color: #555;
+            cursor: pointer;
         }
-        meter {
-            width: 50px;
-            height: 6px;
-        }
-        /* 聊天记录区域 */
-        .chat-messages {
+        /* 聊天区域 */
+        .chat-area {
             flex: 1;
             overflow-y: auto;
             padding: 16px 12px;
-            background: #f0f0f0;
+            background: #f5f5f5;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
-        /* 气泡行 */
-        .message-row {
+        .row {
             display: flex;
             margin-bottom: 4px;
         }
-        .message-row.left {
-            justify-content: flex-start;
-        }
-        .message-row.right {
-            justify-content: flex-end;
-        }
+        .row.left { justify-content: flex-start; }
+        .row.right { justify-content: flex-end; }
         .bubble {
             max-width: 80%;
             padding: 12px 16px;
@@ -106,533 +105,506 @@
             font-size: 1rem;
             line-height: 1.4;
             word-break: break-word;
-            position: relative;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         .left .bubble {
             background: white;
             border-top-left-radius: 4px;
-            color: #111;
         }
         .right .bubble {
-            background: #d1f0c5;  /* 微信绿气泡 */
+            background: #d1f0c5;
             border-top-right-radius: 4px;
-            color: #111;
         }
-        .time-tag {
-            font-size: 0.65rem;
+        .time {
+            font-size: 0.6rem;
             color: #888;
-            margin-top: 4px;
+            margin-top: 2px;
             padding-left: 8px;
         }
-        /* 底部输入区 */
-        .chat-footer {
+        /* 底部 */
+        .footer {
             background: #f6f6f6;
-            border-top: 1px solid #d9d9d9;
             padding: 10px 12px;
+            border-top: 1px solid #d9d9d9;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
-        .input-wrapper {
+        .footer input {
             flex: 1;
+            border: none;
             background: white;
             border-radius: 24px;
-            border: 1px solid #e2e2e2;
-            padding: 8px 14px;
-            display: flex;
-            align-items: center;
-        }
-        .input-wrapper input {
-            flex: 1;
-            border: none;
-            outline: none;
+            padding: 12px 16px;
             font-size: 1rem;
-            background: transparent;
-            padding: 4px 0;
+            outline: none;
+            border: 1px solid #e0e0e0;
         }
-        .action-btn {
-            background: transparent;
+        .footer button {
+            background: #07c160;
             border: none;
-            font-size: 1.6rem;
-            width: 44px;
-            height: 44px;
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 24px;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .footer button.mic {
+            background: #fff;
             color: #07c160;
-            cursor: pointer;
-            transition: 0.2s;
+            border: 1px solid #ddd;
         }
-        .action-btn:active {
-            background: #e0e0e0;
+        .footer button.mic.active {
+            background: #34c759;
+            color: white;
         }
-        .action-btn.mic-off {
-            color: #fa5151;
-        }
-        /* 设置栏 (可折叠) */
-        .settings-bar {
-            background: #fafafa;
-            padding: 6px 16px;
-            border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.75rem;
-        }
-        .key-input-small {
-            border: 1px solid #ccc;
-            border-radius: 16px;
-            padding: 4px 10px;
-            width: 130px;
-            font-size: 0.75rem;
-            background: white;
-        }
-        .small-btn {
-            background: #e9e9e9;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            cursor: pointer;
-        }
-        .debug-text {
+        .debug {
             font-size: 0.6rem;
-            color: #888;
+            color: #777;
             text-align: center;
             padding: 4px;
-            background: #e5e5e5;
+            background: #eaeaea;
         }
     </style>
 </head>
 <body>
-<div class="phone-frame">
-    <!-- 微信风格头部 -->
-    <div class="chat-header">
-        <h2>
-            <span>🔊 声波密聊</span>
-        </h2>
-        <div class="status-icons">
-            <div class="signal-area">
-                <span>📶</span>
-                <meter id="signalMeter" min="0" max="100" low="30" high="60" value="0"></meter>
-            </div>
-            <span class="led-dot" id="micLed" title="麦克风状态"></span>
-            <span class="led-dot" id="txLed" title="发送状态"></span>
+<div class="phone">
+    <!-- 头部 -->
+    <div class="header">
+        <h3>🔊 声波密聊</h3>
+        <div class="status-box">
+            <meter id="signalMeter" min="0" max="100" low="30" high="60" value="0"></meter>
+            <span class="led" id="micLed"></span>
+            <span class="led" id="txLed"></span>
         </div>
     </div>
 
-    <!-- 密钥与设置条 (简洁) -->
-    <div class="settings-bar">
-        <div style="display:flex; align-items:center; gap:6px;">
-            <span>🔐</span>
-            <input type="text" id="secretKeyInput" class="key-input-small" value="s_chat_2026" maxlength="16" placeholder="密钥">
-        </div>
-        <div>
-            <button class="small-btn" id="resetKeyBtn">🔄 随机</button>
-            <button class="small-btn" id="clearChatBtn">🧹 清屏</button>
-        </div>
+    <!-- 密钥栏 -->
+    <div class="key-bar">
+        <span>🔐</span>
+        <input type="text" id="secretKey" value="123456" maxlength="16" placeholder="共享密钥">
+        <button class="small-btn" id="randomKeyBtn">随机</button>
+        <button class="small-btn" id="clearChatBtn">清屏</button>
     </div>
 
     <!-- 聊天消息列表 -->
-    <div id="chatMessages" class="chat-messages">
-        <!-- 初始欢迎气泡 -->
-        <div class="message-row left">
-            <div class="bubble">✨ 声波已就绪<br>双方密钥一致即可密聊</div>
-        </div>
-        <div class="message-row left">
-            <div class="bubble">点击🎤开始监听，输入文字发送</div>
+    <div id="chatMessages" class="chat-area">
+        <div class="row left">
+            <div class="bubble">✨ 双方密钥一致即可密聊<br>点击🎤开始监听</div>
         </div>
     </div>
 
-    <!-- 底部输入区 -->
-    <div class="chat-footer">
-        <button class="action-btn" id="toggleMicBtn" title="切换麦克风">🎤</button>
-        <div class="input-wrapper">
-            <input type="text" id="messageInput" placeholder="输入消息..." maxlength="100" value="你好！">
-        </div>
-        <button class="action-btn" id="sendBtn" style="font-size:1.4rem;">📤</button>
+    <!-- 底部输入 -->
+    <div class="footer">
+        <button class="mic" id="micToggleBtn">🎤</button>
+        <input type="text" id="msgInput" placeholder="输入消息..." value="你好，超声波！" maxlength="100">
+        <button id="sendBtn">📤</button>
     </div>
-
-    <!-- 极简调试信息 -->
-    <div class="debug-text" id="debugInfo">
-        载波20.2kHz · 同时收发 · 加密OOK
-    </div>
+    <div class="debug" id="debugMsg">载波20.2kHz OOK · 加密传输</div>
 </div>
 
 <script>
-    (function(){
-        "use strict";
-
-        // ---------- 参数 ----------
-        const CARRIER_FREQ = 20200;
-        const SYMBOL_RATE = 125;
+(function(){
+    "use strict";
+    
+    // ---------- 协议常量 ----------
+    const CARRIER_FREQ = 20200;          // 单一载波频率
+    const BAUD_RATE = 100;               // 100 symbols/sec (10ms/bit)
+    const PREAMBLE = 0xAA;               // 8位前导 10101010
+    const SYNC_WORD = 0xE5;              // 同步字
+    
+    // 全局变量
+    let audioCtx = null;
+    let isMicOn = false;
+    let isSending = false;
+    let mediaStream = null;
+    let analyser = null;
+    let source = null;
+    let rafId = null;
+    
+    // 接收解码状态
+    let rxState = 'IDLE';                // IDLE, SYNC, DATA
+    let rxBits = [];
+    let lastEnergy = 0;
+    let noiseFloor = 0.005;
+    let signalPeak = 0.01;
+    let bitPhase = 0;
+    let lastDecision = -1;
+    let decisionCount = 0;
+    
+    // UI元素
+    const chatDiv = document.getElementById('chatMessages');
+    const msgInput = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const micBtn = document.getElementById('micToggleBtn');
+    const clearBtn = document.getElementById('clearChatBtn');
+    const randomKeyBtn = document.getElementById('randomKeyBtn');
+    const secretKeyInput = document.getElementById('secretKey');
+    const micLed = document.getElementById('micLed');
+    const txLed = document.getElementById('txLed');
+    const signalMeter = document.getElementById('signalMeter');
+    const debugMsg = document.getElementById('debugMsg');
+    
+    // ---------- 辅助函数 ----------
+    function stringToBytes(str) { return new TextEncoder().encode(str); }
+    function bytesToString(bytes) { return new TextDecoder('utf-8').decode(bytes); }
+    
+    // 异或加密
+    function xorCrypt(data, keyStr) {
+        const key = stringToBytes(keyStr);
+        if (key.length === 0) return data;
+        const res = new Uint8Array(data.length);
+        for (let i=0; i<data.length; i++) res[i] = data[i] ^ key[i % key.length];
+        return res;
+    }
+    
+    // 简单累加和校验
+    function checksum8(data) {
+        let sum = 0;
+        for (let b of data) sum = (sum + b) & 0xFF;
+        return sum;
+    }
+    
+    // 构建数据包 (带加密)
+    function buildPacket(text, key) {
+        let payload = stringToBytes(text);
+        payload = xorCrypt(payload, key);
+        if (payload.length > 200) throw new Error('消息过长');
         
-        const PREAMBLE_BITS = 32;
-        const PREAMBLE = 0xAAAAAAAA;
-        const SYNC_WORD = 0xE4C7;
-        
-        let secretKey = "s_chat_2026";
-        
-        // 全局变量
-        let audioCtx = null;
-        let isMicActive = false;
-        let isSending = false;
-        let mediaStream = null;
-        let sourceNode = null;
-        let analyser = null;
-        let scriptProcessor = null;
-        
-        let rxState = 'IDLE';
-        let rxBuffer = [];
-        let noiseFloor = 0.005;
-        let signalPeak = 0.01;
-        
-        // UI元素
-        const chatMessages = document.getElementById('chatMessages');
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const toggleMicBtn = document.getElementById('toggleMicBtn');
-        const clearChatBtn = document.getElementById('clearChatBtn');
-        const resetKeyBtn = document.getElementById('resetKeyBtn');
-        const secretKeyInput = document.getElementById('secretKeyInput');
-        const micLed = document.getElementById('micLed');
-        const txLed = document.getElementById('txLed');
-        const signalMeter = document.getElementById('signalMeter');
-        const debugInfo = document.getElementById('debugInfo');
-        
-        // 辅助函数
-        function stringToBytes(str) { return new TextEncoder().encode(str); }
-        function bytesToString(bytes) { return new TextDecoder('utf-8').decode(bytes); }
-        
-        function cryptBytes(data, key) {
-            const keyBytes = stringToBytes(key);
-            if (keyBytes.length === 0) return data;
-            const result = new Uint8Array(data.length);
-            for (let i=0; i<data.length; i++) result[i] = data[i] ^ keyBytes[i % keyBytes.length];
-            return result;
+        const bits = [];
+        // 前导 8bit
+        for (let i=7; i>=0; i--) bits.push((PREAMBLE >> i) & 1);
+        // 同步字
+        for (let i=7; i>=0; i--) bits.push((SYNC_WORD >> i) & 1);
+        // 长度
+        const len = payload.length;
+        for (let i=7; i>=0; i--) bits.push((len >> i) & 1);
+        // 数据
+        for (let b of payload) {
+            for (let i=7; i>=0; i--) bits.push((b >> i) & 1);
         }
+        // 校验和
+        const chk = checksum8(payload);
+        for (let i=7; i>=0; i--) bits.push((chk >> i) & 1);
         
-        function crc8(data) {
-            let crc = 0xFF;
-            for (let byte of data) {
-                crc ^= byte;
-                for (let i=0; i<8; i++) crc = (crc & 0x80) ? ((crc << 1) ^ 0x1D) : (crc << 1);
+        // 曼彻斯特编码: 1->10, 0->01
+        const manchester = [];
+        for (let b of bits) {
+            if (b === 1) { manchester.push(1,0); }
+            else { manchester.push(0,1); }
+        }
+        return manchester;
+    }
+    
+    // 生成音频 (OOK)
+    function generateAudio(manchester) {
+        const sampleRate = audioCtx.sampleRate;
+        const chipDuration = 1.0 / (BAUD_RATE * 2);  // 曼彻斯特码片时长
+        const samplesPerChip = Math.floor(sampleRate * chipDuration);
+        const totalSamples = manchester.length * samplesPerChip;
+        const buffer = audioCtx.createBuffer(1, totalSamples, sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        const delta = 2 * Math.PI * CARRIER_FREQ / sampleRate;
+        let phase = 0, idx = 0;
+        const fadeSamples = Math.min(200, Math.floor(totalSamples * 0.02));
+        
+        for (let chip of manchester) {
+            const amp = chip ? 0.9 : 0.0;
+            for (let j=0; j<samplesPerChip; j++) {
+                let sample = chip ? Math.sin(phase) * amp : 0;
+                if (chip) phase += delta;
+                let env = 1.0;
+                if (idx < fadeSamples) env = idx / fadeSamples;
+                else if (idx > totalSamples - fadeSamples) env = (totalSamples - idx) / fadeSamples;
+                data[idx++] = sample * env;
             }
-            return crc & 0xFF;
         }
+        return buffer;
+    }
+    
+    // 添加气泡
+    function addBubble(text, isSelf) {
+        const row = document.createElement('div');
+        row.className = `row ${isSelf ? 'right' : 'left'}`;
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = text;
+        row.appendChild(bubble);
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'time';
+        const now = new Date();
+        timeDiv.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        row.appendChild(timeDiv);
+        chatDiv.appendChild(row);
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+    
+    // 发送
+    async function sendMessage() {
+        const text = msgInput.value.trim();
+        if (!text || isSending) return;
         
-        // 构建发送比特流 (加密 + 曼彻斯特)
-        function buildPacket(text, key) {
-            let dataBytes = stringToBytes(text);
-            if (dataBytes.length > 200) throw new Error('消息过长');
-            dataBytes = cryptBytes(dataBytes, key);
-            const length = dataBytes.length;
-            const crc = crc8(dataBytes);
-            
-            const bits = [];
-            for (let i=31; i>=0; i--) bits.push((PREAMBLE >>> i) & 1);
-            for (let i=15; i>=0; i--) bits.push((SYNC_WORD >>> i) & 1);
-            for (let i=7; i>=0; i--) bits.push((length >>> i) & 1);
-            for (let b of dataBytes) for (let i=7; i>=0; i--) bits.push((b >>> i) & 1);
-            for (let i=7; i>=0; i--) bits.push((crc >>> i) & 1);
-            
-            // 曼彻斯特: 1->10, 0->01
-            const manchester = [];
-            for (let bit of bits) {
-                if (bit === 1) { manchester.push(1,0); }
-                else { manchester.push(0,1); }
+        addBubble(text, true);
+        msgInput.value = '';
+        
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                await audioCtx.resume();
             }
-            return manchester;
-        }
-        
-        function generateOOKBuffer(manchesterBits) {
-            const sampleRate = audioCtx.sampleRate;
-            const samplesPerBit = Math.floor(sampleRate / SYMBOL_RATE);
-            const samplesPerChip = Math.floor(samplesPerBit / 2);
-            const totalSamples = manchesterBits.length * samplesPerChip;
-            const buffer = audioCtx.createBuffer(1, totalSamples, sampleRate);
-            const data = buffer.getChannelData(0);
-            const delta = 2 * Math.PI * CARRIER_FREQ / sampleRate;
-            let phase = 0, idx = 0;
-            const fadeLen = Math.min(200, Math.floor(totalSamples * 0.02));
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
             
-            for (let chip of manchesterBits) {
-                const amp = chip ? 0.85 : 0.0;
-                for (let j=0; j<samplesPerChip; j++) {
-                    let sample = chip ? Math.sin(phase) * amp : 0;
-                    if (chip) phase += delta;
-                    let env = 1.0;
-                    if (idx < fadeLen) env = idx / fadeLen;
-                    else if (idx > totalSamples - fadeLen) env = (totalSamples - idx) / fadeLen;
-                    data[idx] = sample * env;
-                    idx++;
-                }
-            }
-            return buffer;
-        }
-        
-        // 添加气泡到聊天区
-        function addMessageBubble(text, isSelf = true) {
-            const row = document.createElement('div');
-            row.className = `message-row ${isSelf ? 'right' : 'left'}`;
-            const bubble = document.createElement('div');
-            bubble.className = 'bubble';
-            bubble.textContent = text;
-            row.appendChild(bubble);
+            const key = secretKeyInput.value || '123456';
+            const manchester = buildPacket(text, key);
+            const buffer = generateAudio(manchester);
             
-            // 可选时间戳
-            const time = document.createElement('div');
-            time.className = 'time-tag';
-            const now = new Date();
-            time.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-            row.appendChild(time);
+            const src = audioCtx.createBufferSource();
+            src.buffer = buffer;
+            src.connect(audioCtx.destination);
             
-            chatMessages.appendChild(row);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-        
-        // 发送消息 (UI + 超声波)
-        async function sendMessage() {
-            const text = messageInput.value.trim();
-            if (!text) return;
-            if (isSending) return;
+            isSending = true;
+            txLed.classList.add('active');
+            sendBtn.disabled = true;
             
-            // 先显示自己气泡
-            addMessageBubble(text, true);
-            messageInput.value = '';
-            
-            try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
-                
-                const key = secretKeyInput.value || "default";
-                const manchester = buildPacket(text, key);
-                const buffer = generateOOKBuffer(manchester);
-                
-                const source = audioCtx.createBufferSource();
-                source.buffer = buffer;
-                source.connect(audioCtx.destination);
-                
-                isSending = true;
-                txLed.classList.add('active');
-                sendBtn.disabled = true;
-                
-                source.onended = () => {
-                    isSending = false;
-                    txLed.classList.remove('active');
-                    sendBtn.disabled = false;
-                };
-                source.start();
-                setTimeout(() => {
-                    if (isSending) {
-                        isSending = false;
-                        txLed.classList.remove('active');
-                        sendBtn.disabled = false;
-                    }
-                }, buffer.duration * 1000 + 100);
-                
-                debugInfo.innerText = `📤 发送: ${text}`;
-            } catch(e) {
-                alert('发送失败: ' + e.message);
+            src.onended = () => {
                 isSending = false;
                 txLed.classList.remove('active');
                 sendBtn.disabled = false;
-            }
+            };
+            src.start();
+            
+            setTimeout(() => {
+                if (isSending) {
+                    isSending = false;
+                    txLed.classList.remove('active');
+                    sendBtn.disabled = false;
+                }
+            }, buffer.duration * 1000 + 100);
+            
+            debugMsg.innerText = `📤 已发送 (${manchester.length}码片)`;
+        } catch(e) {
+            alert('发送失败: ' + e.message);
+            isSending = false;
+            txLed.classList.remove('active');
+            sendBtn.disabled = false;
+        }
+    }
+    
+    // ---------- 接收解码 (基于FFT能量) ----------
+    function processAudioFrame() {
+        if (!analyser || !isMicOn) return;
+        
+        const freqData = new Float32Array(analyser.frequencyBinCount);
+        analyser.getFloatFrequencyData(freqData);
+        
+        // 计算载波频率附近的能量 (取3个bin最大值)
+        const binWidth = audioCtx.sampleRate / analyser.fftSize;
+        const centerIdx = Math.round(CARRIER_FREQ / binWidth);
+        let maxDB = -Infinity;
+        for (let d=-2; d<=2; d++) {
+            const idx = Math.min(freqData.length-1, Math.max(0, centerIdx+d));
+            if (freqData[idx] > maxDB) maxDB = freqData[idx];
         }
         
-        // 接收处理 (曼彻斯特解码 + 协议)
-        let manchesterPair = [];
-        function processChip(chip) {
-            manchesterPair.push(chip);
-            if (manchesterPair.length < 2) return;
-            const [c1, c2] = manchesterPair;
-            manchesterPair = [];
-            
-            let bit = -1;
-            if (c1 === 1 && c2 === 0) bit = 1;
-            else if (c1 === 0 && c2 === 1) bit = 0;
-            else return;
-            
-            if (rxState === 'IDLE') {
-                rxBuffer.push(bit);
-                if (rxBuffer.length > 64) rxBuffer.shift();
-                if (rxBuffer.length >= 32) {
-                    let val = 0;
-                    for (let i=0; i<32; i++) val = (val<<1) | rxBuffer[rxBuffer.length-32+i];
-                    if (val === PREAMBLE) {
-                        rxState = 'SYNCING';
-                        rxBuffer = [];
-                        debugInfo.innerText = '🔗 前导锁定';
-                    }
+        // 转换到线性幅度
+        const linearEnergy = Math.pow(10, maxDB / 20);
+        
+        // 动态阈值
+        if (linearEnergy < noiseFloor * 1.2) {
+            noiseFloor = 0.98 * noiseFloor + 0.02 * linearEnergy;
+        } else {
+            noiseFloor = 0.995 * noiseFloor + 0.005 * linearEnergy;
+        }
+        signalPeak = Math.max(linearEnergy, signalPeak * 0.995);
+        
+        const threshold = noiseFloor * 2.0 + 0.005;
+        const chip = (linearEnergy > threshold) ? 1 : 0;
+        
+        // 信号强度显示
+        const percent = Math.min(100, Math.round((linearEnergy / (signalPeak+0.001)) * 150));
+        signalMeter.value = percent;
+        
+        // 曼彻斯特解码状态机 (基于帧抽取，每帧近似2个chip)
+        // 使用简化的去抖逻辑
+        if (!window._chipBuf) window._chipBuf = [];
+        window._chipBuf.push(chip);
+        if (window._chipBuf.length > 4) window._chipBuf.shift();
+        
+        // 多数表决去抖
+        const ones = window._chipBuf.filter(v=>v===1).length;
+        const decision = ones >= 3 ? 1 : 0;
+        
+        // 送入曼彻斯特解码器
+        manchesterDecode(decision);
+        
+        rafId = requestAnimationFrame(processAudioFrame);
+    }
+    
+    let manchesterPair = [];
+    function manchesterDecode(chip) {
+        manchesterPair.push(chip);
+        if (manchesterPair.length < 2) return;
+        const [c1, c2] = manchesterPair;
+        manchesterPair = [];
+        
+        let bit = -1;
+        if (c1 === 1 && c2 === 0) bit = 1;
+        else if (c1 === 0 && c2 === 1) bit = 0;
+        else return;  // 无效
+        
+        // 状态机
+        if (rxState === 'IDLE') {
+            rxBits.push(bit);
+            if (rxBits.length > 16) rxBits.shift();
+            // 检测前导 10101010
+            if (rxBits.length >= 8) {
+                let val = 0;
+                for (let i=0; i<8; i++) val = (val<<1) | rxBits[rxBits.length-8+i];
+                if (val === PREAMBLE) {
+                    rxState = 'SYNC';
+                    rxBits = [];
+                    debugMsg.innerText = '🔗 前导锁定';
                 }
-            } else if (rxState === 'SYNCING') {
-                rxBuffer.push(bit);
-                if (rxBuffer.length >= 16) {
-                    let sync = 0;
-                    for (let i=0; i<16; i++) sync = (sync<<1) | rxBuffer[i];
-                    if (sync === SYNC_WORD) {
-                        rxState = 'RECEIVING';
-                        rxBuffer = rxBuffer.slice(16);
+            }
+        } else if (rxState === 'SYNC') {
+            rxBits.push(bit);
+            if (rxBits.length >= 8) {
+                let sync = 0;
+                for (let i=0; i<8; i++) sync = (sync<<1) | rxBits[i];
+                if (sync === SYNC_WORD) {
+                    rxState = 'DATA';
+                    rxBits = rxBits.slice(8);
+                } else {
+                    rxState = 'IDLE';
+                    rxBits = [];
+                }
+            }
+        } else if (rxState === 'DATA') {
+            rxBits.push(bit);
+            // 至少长度字节
+            if (rxBits.length >= 8) {
+                let len = 0;
+                for (let i=0; i<8; i++) len = (len<<1) | rxBits[i];
+                if (len > 200) { rxState='IDLE'; rxBits=[]; return; }
+                const totalBits = 8 + len*8 + 8;
+                if (rxBits.length >= totalBits) {
+                    // 提取数据
+                    const dataBits = rxBits.slice(8, 8+len*8);
+                    const dataBytes = [];
+                    for (let i=0; i<len; i++) {
+                        let b = 0;
+                        for (let j=0; j<8; j++) b = (b<<1) | dataBits[i*8+j];
+                        dataBytes.push(b);
+                    }
+                    // 校验
+                    let rxChk = 0;
+                    for (let i=0; i<8; i++) rxChk = (rxChk<<1) | rxBits[8+len*8+i];
+                    const calcChk = checksum8(new Uint8Array(dataBytes));
+                    
+                    if (rxChk === calcChk) {
+                        const key = secretKeyInput.value || '123456';
+                        const decrypted = xorCrypt(new Uint8Array(dataBytes), key);
+                        try {
+                            const text = bytesToString(decrypted);
+                            addBubble(text, false);
+                            debugMsg.innerText = `📥 收到: ${text}`;
+                        } catch(e) { debugMsg.innerText = '解密失败'; }
                     } else {
-                        rxState = 'IDLE';
-                        rxBuffer = [];
+                        debugMsg.innerText = '❌ 校验错误';
                     }
-                }
-            } else if (rxState === 'RECEIVING') {
-                rxBuffer.push(bit);
-                if (rxBuffer.length >= 8) {
-                    let len = 0;
-                    for (let i=0; i<8; i++) len = (len<<1) | rxBuffer[i];
-                    if (len > 200) { rxState='IDLE'; rxBuffer=[]; return; }
-                    const totalBits = 8 + len*8 + 8;
-                    if (rxBuffer.length >= totalBits) {
-                        const dataBits = rxBuffer.slice(8, 8+len*8);
-                        const dataBytes = [];
-                        for (let i=0; i<len; i++) {
-                            let b=0;
-                            for (let j=0; j<8; j++) b = (b<<1) | dataBits[i*8+j];
-                            dataBytes.push(b);
-                        }
-                        let crcRx = 0;
-                        for (let i=0; i<8; i++) crcRx = (crcRx<<1) | rxBuffer[8+len*8+i];
-                        
-                        if (crcRx === crc8(new Uint8Array(dataBytes))) {
-                            const key = secretKeyInput.value || "default";
-                            const decrypted = cryptBytes(new Uint8Array(dataBytes), key);
-                            try {
-                                const text = bytesToString(decrypted);
-                                addMessageBubble(text, false);
-                                debugInfo.innerText = `📥 收到: ${text}`;
-                            } catch(e) { debugInfo.innerText = '解密失败'; }
-                        } else { debugInfo.innerText = 'CRC错误'; }
-                        rxState = 'IDLE';
-                        rxBuffer = [];
-                    }
+                    rxState = 'IDLE';
+                    rxBits = [];
                 }
             }
         }
-        
-        // 开始监听
-        async function startMicrophone() {
-            if (isMicActive) return;
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                await audioCtx.resume();
-                
-                mediaStream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
-                });
-                sourceNode = audioCtx.createMediaStreamSource(mediaStream);
-                analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 2048;
-                analyser.smoothingTimeConstant = 0.2;
-                
-                scriptProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
-                sourceNode.connect(analyser);
-                sourceNode.connect(scriptProcessor);
-                scriptProcessor.connect(audioCtx.destination);
-                
-                rxState = 'IDLE';
-                rxBuffer = [];
-                noiseFloor = 0.005;
-                signalPeak = 0.01;
-                
-                const freqData = new Float32Array(analyser.frequencyBinCount);
-                const sampleRate = audioCtx.sampleRate;
-                const chipSamplesTarget = Math.floor(sampleRate / (SYMBOL_RATE * 2));
-                let chipAcc = { count: 0, energySum: 0 };
-                
-                scriptProcessor.onaudioprocess = (e) => {
-                    const input = e.inputBuffer.getChannelData(0);
-                    let sum = 0;
-                    for (let i=0; i<input.length; i++) sum += Math.abs(input[i]);
-                    const instantEnergy = sum / input.length;
-                    
-                    if (instantEnergy < noiseFloor * 1.5) noiseFloor = 0.95*noiseFloor + 0.05*instantEnergy;
-                    else noiseFloor = 0.995*noiseFloor + 0.005*instantEnergy;
-                    signalPeak = Math.max(instantEnergy, signalPeak*0.999);
-                    const threshold = noiseFloor * 2.5 + 0.002;
-                    
-                    const percent = Math.min(100, Math.round((instantEnergy/(signalPeak+0.001))*120));
-                    signalMeter.value = percent;
-                    
-                    chipAcc.count += input.length;
-                    chipAcc.energySum += instantEnergy * input.length;
-                    
-                    while (chipAcc.count >= chipSamplesTarget) {
-                        const avgEnergy = chipAcc.energySum / chipAcc.count;
-                        const chip = (avgEnergy > threshold) ? 1 : 0;
-                        processChip(chip);
-                        chipAcc.count -= chipSamplesTarget;
-                        chipAcc.energySum = 0;
-                    }
-                    analyser.getFloatFrequencyData(freqData);
-                };
-                
-                isMicActive = true;
-                micLed.classList.add('active');
-                toggleMicBtn.innerHTML = '🎤<span style="font-size:0.6rem; margin-left:2px;">⏸️</span>';
-                toggleMicBtn.classList.remove('mic-off');
-                debugInfo.innerText = '🎤 监听中 · 自适应阈值';
-            } catch(e) {
-                alert('麦克风权限未授予');
-                isMicActive = false;
-            }
+    }
+    
+    // 开启麦克风
+    async function startMic() {
+        if (isMicOn) return;
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            await audioCtx.resume();
+            
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+            source = audioCtx.createMediaStreamSource(mediaStream);
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 2048;
+            analyser.smoothingTimeConstant = 0.3;
+            source.connect(analyser);
+            
+            isMicOn = true;
+            micLed.classList.add('active');
+            micBtn.classList.add('active');
+            micBtn.innerHTML = '🎤<span style="font-size:0.6rem;">⏸️</span>';
+            
+            rxState = 'IDLE';
+            rxBits = [];
+            window._chipBuf = [];
+            
+            rafId = requestAnimationFrame(processAudioFrame);
+            debugMsg.innerText = '🎤 监听中 · 自适应阈值';
+        } catch(e) {
+            alert('无法访问麦克风，请授予权限。');
+            isMicOn = false;
         }
-        
-        function stopMicrophone() {
-            if (!isMicActive) return;
-            isMicActive = false;
-            micLed.classList.remove('active');
-            toggleMicBtn.innerHTML = '🎤';
-            toggleMicBtn.classList.add('mic-off');
-            if (scriptProcessor) scriptProcessor.disconnect();
-            if (sourceNode) sourceNode.disconnect();
-            if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
-            analyser = null; scriptProcessor = null;
-            signalMeter.value = 0;
-            debugInfo.innerText = '监听已停止';
-        }
-        
-        async function toggleMic() {
-            if (isMicActive) stopMicrophone();
-            else await startMicrophone();
-        }
-        
-        function clearChat() {
-            chatMessages.innerHTML = '';
-            addMessageBubble('✨ 聊天记录已清空', false);
-        }
-        
-        function resetKey() {
-            const rand = Math.random().toString(36).substring(2,10);
-            secretKeyInput.value = 'key_'+rand;
-        }
-        
-        // 绑定事件
-        sendBtn.addEventListener('click', sendMessage);
-        toggleMicBtn.addEventListener('click', toggleMic);
-        clearChatBtn.addEventListener('click', clearChat);
-        resetKeyBtn.addEventListener('click', resetKey);
-        messageInput.addEventListener('keypress', (e) => { if(e.key==='Enter') sendMessage(); });
-        
-        window.addEventListener('beforeunload', () => {
-            if (isMicActive) stopMicrophone();
-            if (audioCtx) audioCtx.close();
-        });
-        
-        // 初始化音频上下文
-        document.body.addEventListener('touchstart', ()=>{
-            if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-        }, {once:true});
-        
-        secretKeyInput.value = secretKey;
-        debugInfo.innerText = '点击🎤开始监听';
-    })();
+    }
+    
+    function stopMic() {
+        if (!isMicOn) return;
+        isMicOn = false;
+        micLed.classList.remove('active');
+        micBtn.classList.remove('active');
+        micBtn.innerHTML = '🎤';
+        if (rafId) cancelAnimationFrame(rafId);
+        if (source) source.disconnect();
+        if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+        analyser = null;
+        signalMeter.value = 0;
+        debugMsg.innerText = '监听已停止';
+    }
+    
+    function toggleMic() {
+        if (isMicOn) stopMic();
+        else startMic();
+    }
+    
+    // 清屏
+    function clearChat() {
+        chatDiv.innerHTML = '';
+        addBubble('✨ 聊天记录已清空', false);
+    }
+    
+    // 随机密钥
+    function randomKey() {
+        secretKeyInput.value = Math.random().toString(36).substring(2,10);
+    }
+    
+    // 绑定事件
+    sendBtn.addEventListener('click', sendMessage);
+    micBtn.addEventListener('click', toggleMic);
+    clearBtn.addEventListener('click', clearChat);
+    randomKeyBtn.addEventListener('click', randomKey);
+    msgInput.addEventListener('keypress', (e) => { if(e.key==='Enter') sendMessage(); });
+    
+    // 页面卸载
+    window.addEventListener('beforeunload', () => {
+        if (isMicOn) stopMic();
+        if (audioCtx) audioCtx.close();
+    });
+    
+    // 预初始化音频上下文 (用户手势时)
+    document.body.addEventListener('touchstart', ()=>{
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }, {once: true});
+    
+})();
 </script>
 </body>
 </html>
