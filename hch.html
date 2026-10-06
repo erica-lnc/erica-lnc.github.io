@@ -41,7 +41,6 @@ body{background:#0b1322;color:#fff;min-height:100vh;padding:40px 16px;}
 </div>
 
 <script>
-// 大量密钥白名单池，50‑70字符；卖给客户的标签只烧录其中1‑2条密钥
 const KEY_WHITELIST = [
     "SK‑AIR‑DET‑KEY‑9827461acf03bd7e228109ff55aa77bbccdd88eeff0011",
     "SK‑AIR‑DET‑KEY‑8736250bda92ce6f117208ee44bb66aaee99ddcc0022",
@@ -71,14 +70,21 @@ startBtn.addEventListener("click", async ()=>{
             loadAnim.classList.add("hide");
             resultArea.classList.add("hide");
 
-            const record = event.message.records[0];
-            if(!record || record.type !== "T"){
+            const msg = event.message;
+            if(!msg || msg.records.length === 0){
                 statusText.className = "status err";
                 statusText.innerText = "请使用官方检测芯片，这为非官方检测芯片";
                 return;
             }
-            // 读出写在标签NDEF里面的密钥
-            const tagKey = new TextDecoder().decode(record.payload).trim();
+            const record = msg.records[0];
+            if(record.type !== "T"){
+                statusText.className = "status err";
+                statusText.innerText = "请使用官方检测芯片，这为非官方检测芯片";
+                return;
+            }
+            // 修复：NDEF Text记录payload第1字节是标志位，真正文本从偏移1开始
+            const buf = record.payload.slice(1);
+            const tagKey = new TextDecoder("utf-8").decode(buf).trim();
 
             if(!KEY_WHITELIST.includes(tagKey)){
                 statusText.className = "status err";
@@ -86,7 +92,7 @@ startBtn.addEventListener("click", async ()=>{
                 return;
             }
 
-            // 密钥校验通过，开始表演
+            // 密钥校验通过
             statusText.className = "status ok";
             statusText.innerText = "识别成功，正在采集空气样本";
             loadAnim.classList.remove("hide");
