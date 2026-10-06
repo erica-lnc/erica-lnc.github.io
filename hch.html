@@ -1,167 +1,338 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-HK">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NFC空氣質量分析儀【科普演示】</title>
+<title>空氣質量檢測儀 - 專業版</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif;}
-body{background:#0b1322;color:#fff;min-height:100vh;padding:40px 16px;}
-.box{max-width:400px;margin:0 auto;background:rgba(255,255,255,0.07);border-radius:20px;padding:28px 22px;border:1px solid rgba(255,255,255,0.12);}
-.title{text-align:center;font-size:21px;margin-bottom:22px;}
-.tip{background:rgba(40,120,220,0.15);padding:12px;border-radius:10px;font-size:14px;margin-bottom:24px;color:#b8daff;}
-.status{text-align:center;margin-bottom:20px;font-size:16px;min-height:44px;}
-.err{color:#ff7b7b;}
-.ok{color:#7bff9e;}
-.loadingDot span{display:inline-block;width:8px;height:8px;border-radius:50%;background:#42a5f5;margin:0 4px;animation:dot 1.2s infinite;}
-.loadingDot span:nth-child(2){animation-delay:0.2s;}
-.loadingDot span:nth-child(3){animation-delay:0.4s;}
-@keyframes dot{0%,100%{opacity:0.2;transform:scale(0.8);}50%{opacity:1;transform:scale(1.1);}}
-.item{display:flex;justify-content:space-between;padding:14px 10px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:10px;}
-.val{font-weight:bold;font-size:19px;color:#73ccff;}
-.level{font-size:13px;margin-left:8px;}
-.level-good{color:#7bff9e;}
-.level-warn{color:#ffcc4d;}
-.level-bad{color:#ff7b7b;}
-.info{margin-top:18px;font-size:12px;color:#aaa;text-align:center;}
-.hide{display:none;}
-#startBtn{width:100%;padding:14px;background:#2878dc;color:white;border:none;border-radius:12px;font-size:16px;margin-bottom:20px;cursor:pointer;}
-#startBtn:disabled{opacity:0.5;cursor:not-allowed;}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    color: #fff;
+  }
+  .container {
+    max-width: 420px;
+    width: 100%;
+  }
+  .header {
+    text-align: center;
+    padding: 24px 0 16px;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 2px;
+  }
+  .header p {
+    font-size: 13px;
+    color: #8ecae6;
+    margin-top: 4px;
+  }
+  .card {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 0;
+    text-align: center;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.3s;
+  }
+  .tab.active {
+    background: linear-gradient(135deg, #2193b0, #6dd5ed);
+    color: #fff;
+    border-color: transparent;
+    font-weight: 600;
+  }
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    margin-bottom: 16px;
+  }
+  .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #555;
+    transition: background 0.3s;
+  }
+  .status-dot.scanning { background: #ffd166; animation: pulse 0.8s infinite; }
+  .status-dot.done { background: #06d6a0; }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .status-text { font-size: 14px; }
+  .result-area {
+    text-align: center;
+    padding: 20px 0;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .result-value {
+    font-size: 52px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .result-unit {
+    font-size: 16px;
+    color: #aaa;
+    margin-top: 6px;
+  }
+  .result-level {
+    margin-top: 10px;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .level-safe { background: rgba(6,214,160,0.2); color: #06d6a0; }
+  .level-warning { background: rgba(255,209,102,0.2); color: #ffd166; }
+  .level-danger { background: rgba(239,71,111,0.2); color: #ef476f; }
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    background: linear-gradient(135deg, #2193b0, #6dd5ed);
+    color: #fff;
+    transition: transform 0.2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .history { margin-top: 16px; }
+  .history h3 { font-size: 14px; margin-bottom: 10px; color: #8ecae6; }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .disclaimer {
+    margin-top: 20px;
+    padding: 14px;
+    background: rgba(239,71,111,0.15);
+    border: 1px solid rgba(239,71,111,0.4);
+    border-radius: 12px;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #ff8fa3;
+  }
+  .disclaimer strong { color: #ef476f; font-size: 14px; }
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    margin-top: 12px;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-bar.show { display: block; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2193b0, #6dd5ed);
+    width: 0%;
+    transition: width 0.1s linear;
+  }
 </style>
 </head>
 <body>
-<div class="box">
-<h2 class="title">🔬 NFC空氣檢測終端</h2>
-<div class="tip">點擊按鈕啟動，將寫入金鑰的NFC標籤貼近手機NFC區域</div>
-<button id="startBtn">啟動NFC掃描</button>
-<div class="status" id="statusText">未啟動掃描</div>
-<div class="loadingDot hide" id="loadAnim">
-<span></span><span></span><span></span>
-</div>
-<div id="resultArea" class="hide">
-<div class="item">
-    <span>甲醛 HCHO</span>
-    <span><span class="val" id="hchoOut">0.00 mg/m³</span><span class="level" id="hchoLevel"></span></span>
-</div>
-<div class="item">
-    <span>TVOC</span>
-    <span><span class="val" id="tvocOut">0.00 mg/m³</span><span class="level" id="tvocLevel"></span></span>
-</div>
-</div>
-<div class="info">⚠️ 本頁面僅技術演示，無真實檢測能力</div>
+<div class="container">
+  <div class="header">
+    <h1>🔬 空氣質量檢測儀</h1>
+    <p>NFC 智能傳感 · 實時監測</p>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" data-mode="formaldehyde">甲醛檢測</div>
+      <div class="tab" data-mode="radiation">輻射檢測</div>
+      <div class="tab" data-mode="water">水質檢測</div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-text" id="statusText">請將設備貼近手機 NFC 區域</span>
+    </div>
+
+    <div class="result-area" id="resultArea">
+      <div style="font-size:40px; opacity:0.3;">📡</div>
+      <p style="margin-top:10px; color:#888; font-size:14px;">等待檢測...</p>
+    </div>
+
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <button class="btn" id="detectBtn" onclick="startDetect()">開始檢測</button>
+  </div>
+
+  <div class="card history" id="historyCard" style="display:none;">
+    <h3>📋 檢測記錄</h3>
+    <div id="historyList"></div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>⚠️ 科普演示頁面</strong><br>
+    本頁面所有數據均為隨機生成，無任何真實傳感器或檢測能力。<br>
+    僅用於展示「假檢測儀」的運作原理，請勿當真。
+  </div>
 </div>
 
 <script>
-const KEY_WHITELIST = [
-    "SK-AIR-DET-KEY-9827461acf03bd7e228109ff55aa77bbccdd88eeff0011",
-    "SK-AIR-DET-KEY-8736250bda92ce6f117208ee44bb66aaee99ddcc0022",
-    "SK-AIR-DET-KEY-7625149cbe81df5e339217dd33cc55bbdd88aaff0033"
-];
+const MODES = {
+  formaldehyde: {
+    label: '甲醛',
+    unit: 'mg/m³',
+    min: 0.01, max: 0.35,
+    safe: 0.08, warning: 0.15,
+    levels: [
+      { max: 0.08, text: '✅ 安全', cls: 'level-safe' },
+      { max: 0.15, text: '⚠️ 輕度超標', cls: 'level-warning' },
+      { max: 999, text: '❌ 重度超標', cls: 'level-danger' }
+    ]
+  },
+  radiation: {
+    label: '輻射',
+    unit: 'μSv/h',
+    min: 0.05, max: 1.2,
+    safe: 0.3, warning: 0.6,
+    levels: [
+      { max: 0.3, text: '✅ 正常本底', cls: 'level-safe' },
+      { max: 0.6, text: '⚠️ 偏高', cls: 'level-warning' },
+      { max: 999, text: '❌ 危險', cls: 'level-danger' }
+    ]
+  },
+  water: {
+    label: '水質 TDS',
+    unit: 'ppm',
+    min: 20, max: 500,
+    safe: 150, warning: 300,
+    levels: [
+      { max: 150, text: '✅ 優良', cls: 'level-safe' },
+      { max: 300, text: '⚠️ 一般', cls: 'level-warning' },
+      { max: 999, text: '❌ 不合格', cls: 'level-danger' }
+    ]
+  }
+};
 
-const statusText = document.getElementById("statusText");
-const loadAnim = document.getElementById("loadAnim");
-const resultArea = document.getElementById("resultArea");
-const startBtn = document.getElementById("startBtn");
+let currentMode = 'formaldehyde';
+let history = [];
 
-let isScanning = false;
-
-startBtn.addEventListener("click", async () => {
-    if (isScanning) return;
-
-    if (!("NDEFReader" in window)) {
-        statusText.className = "status err";
-        statusText.innerText = "此瀏覽器不支援 Web NFC，請使用 Android Chrome";
-        return;
-    }
-
-    try {
-        isScanning = true;
-        startBtn.disabled = true;
-        startBtn.textContent = "掃描中...";
-
-        const ndef = new NDEFReader();
-        await ndef.scan();
-        statusText.className = "status ok";
-        statusText.innerText = "掃描已開啟，請貼近NFC標籤";
-
-        ndef.onreading = event => {
-            loadAnim.classList.add("hide");
-            resultArea.classList.add("hide");
-
-            const msg = event.message;
-            if (!msg || msg.records.length === 0) {
-                statusText.className = "status err";
-                statusText.innerText = "請使用官方檢測芯片，此為非官方芯片";
-                resetBtn();
-                return;
-            }
-
-            const record = msg.records[0];
-            if (record.type !== "T") {
-                statusText.className = "status err";
-                statusText.innerText = "請使用官方檢測芯片，此為非官方芯片";
-                resetBtn();
-                return;
-            }
-
-            // 正確解碼 NDEF Text Record
-            const payload = record.payload;
-            const langCodeLen = payload[0];
-            const textBytes = payload.slice(1 + langCodeLen);
-            const tagKey = new TextDecoder("utf-8").decode(textBytes).trim();
-
-            if (!KEY_WHITELIST.includes(tagKey)) {
-                statusText.className = "status err";
-                statusText.innerText = "請使用官方檢測芯片，此為非官方芯片";
-                resetBtn();
-                return;
-            }
-
-            // 金鑰校驗通過
-            statusText.className = "status ok";
-            statusText.innerText = "識別成功，正在採集空氣樣本";
-            loadAnim.classList.remove("hide");
-
-            setTimeout(() => {
-                const hcho = (Math.random() * 0.20).toFixed(2);
-                const tvoc = (Math.random() * 0.75).toFixed(2);
-
-                document.getElementById("hchoOut").textContent = `${hcho} mg/m³`;
-                document.getElementById("tvocOut").textContent = `${tvoc} mg/m³`;
-
-                // 評級顯示
-                const hchoLevel = document.getElementById("hchoLevel");
-                const tvocLevel = document.getElementById("tvocLevel");
-                hchoLevel.textContent = hcho > 0.10 ? "⚠️ 超標" : "✅ 正常";
-                hchoLevel.className = "level " + (hcho > 0.10 ? "level-bad" : "level-good");
-                tvocLevel.textContent = tvoc > 0.60 ? "⚠️ 偏高" : "✅ 正常";
-                tvocLevel.className = "level " + (tvoc > 0.60 ? "level-warn" : "level-good");
-
-                loadAnim.classList.add("hide");
-                statusText.innerText = "檢測完成";
-                resultArea.classList.remove("hide");
-                resetBtn();
-            }, 3000);
-        };
-
-        ndef.onreadingerror = () => {
-            statusText.className = "status err";
-            statusText.innerText = "標籤讀取失敗，請重新貼緊";
-            resetBtn();
-        };
-
-    } catch (err) {
-        statusText.className = "status err";
-        statusText.innerText = "啟動失敗: " + err.message;
-        resetBtn();
-    }
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentMode = tab.dataset.mode;
+    resetUI();
+  });
 });
 
-function resetBtn() {
-    isScanning = false;
-    startBtn.disabled = false;
-    startBtn.textContent = "啟動NFC掃描";
+function resetUI() {
+  document.getElementById('statusDot').className = 'status-dot';
+  document.getElementById('statusText').textContent = '請將設備貼近手機 NFC 區域';
+  document.getElementById('resultArea').innerHTML = '<div style="font-size:40px; opacity:0.3;">📡</div><p style="margin-top:10px; color:#888; font-size:14px;">等待檢測...</p>';
+  document.getElementById('progressBar').classList.remove('show');
+  document.getElementById('detectBtn').disabled = false;
+}
+
+function startDetect() {
+  const mode = MODES[currentMode];
+  const btn = document.getElementById('detectBtn');
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  const bar = document.getElementById('progressBar');
+  const fill = document.getElementById('progressFill');
+  const result = document.getElementById('resultArea');
+
+  btn.disabled = true;
+  dot.className = 'status-dot scanning';
+  text.textContent = '正在採集空氣樣本...';
+  bar.classList.add('show');
+  result.innerHTML = '<div style="font-size:40px; animation: pulse 0.8s infinite;">⏳</div><p style="margin-top:10px; color:#aaa; font-size:14px;">分析中，請稍候...</p>';
+
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += Math.random() * 15;
+    if (progress > 100) progress = 100;
+    fill.style.width = progress + '%';
+
+    if (progress >= 100) {
+      clearInterval(interval);
+      setTimeout(() => showResult(mode), 400);
+    }
+  }, 200);
+}
+
+function showResult(mode) {
+  const value = (mode.min + Math.random() * (mode.max - mode.min));
+  const display = mode.unit === 'mg/m³' ? value.toFixed(2) : Math.round(value);
+  const level = mode.levels.find(l => value <= l.max);
+
+  document.getElementById('statusDot').className = 'status-dot done';
+  document.getElementById('statusText').textContent = '檢測完成';
+  document.getElementById('progressBar').classList.remove('show');
+  document.getElementById('detectBtn').disabled = false;
+
+  document.getElementById('resultArea').innerHTML = `
+    <div class="result-value">${display}</div>
+    <div class="result-unit">${mode.label} · ${mode.unit}</div>
+    <div class="result-level ${level.cls}">${level.text}</div>
+  `;
+
+  const now = new Date();
+  const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+  history.unshift({ mode: mode.label, value: display, unit: mode.unit, level: level.text, time });
+  if (history.length > 5) history.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  const card = document.getElementById('historyCard');
+  const list = document.getElementById('historyList');
+  card.style.display = 'block';
+  list.innerHTML = history.map(h =>
+    `<div class="history-item">
+      <span>${h.time} ${h.mode}</span>
+      <span>${h.value} ${h.unit} ${h.level}</span>
+    </div>`
+  ).join('');
 }
 </script>
 </body>
 </html>
+
