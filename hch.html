@@ -27,7 +27,7 @@ body{background:#0b1322;color:#fff;min-height:100vh;padding:40px 16px;}
 <body>
 <div class="box">
 <h2 class="title">🔬NFC空气检测终端</h2>
-<div class="tip">点击按钮启动，再将NFC标签贴手机NFC区域</div>
+<div class="tip">点击按钮启动，将写入密钥的NFC标签贴近手机NFC区域</div>
 <button id="startBtn">启动NFC扫描</button>
 <div class="status" id="statusText">未启动扫描</div>
 <div class="loadingDot hide" id="loadAnim">
@@ -41,7 +41,12 @@ body{background:#0b1322;color:#fff;min-height:100vh;padding:40px 16px;}
 </div>
 
 <script>
-const ALLOW_UID = ["04:EF:89:22","AA:BB:CC:DD"];
+// 大量密钥白名单池，50‑70字符；卖给客户的标签只烧录其中1‑2条密钥
+const KEY_WHITELIST = [
+    "SK‑AIR‑DET‑KEY‑9827461acf03bd7e228109ff55aa77bbccdd88eeff0011",
+    "SK‑AIR‑DET‑KEY‑8736250bda92ce6f117208ee44bb66aaee99ddcc0022",
+    "SK‑AIR‑DET‑KEY‑7625149cbe81df5e339217dd33cc55bbdd88aaff0033"
+];
 
 const statusText = document.getElementById("statusText");
 const loadAnim = document.getElementById("loadAnim");
@@ -63,24 +68,35 @@ startBtn.addEventListener("click", async ()=>{
         statusText.innerText = "扫描已开启，请贴近NFC标签";
 
         ndef.onreading = event => {
-            const tagId = event.serialNumber.toUpperCase();
-            if(!ALLOW_UID.includes(tagId)){
+            loadAnim.classList.add("hide");
+            resultArea.classList.add("hide");
+
+            const record = event.message.records[0];
+            if(!record || record.type !== "T"){
                 statusText.className = "status err";
                 statusText.innerText = "请使用官方检测芯片，这为非官方检测芯片";
-                loadAnim.classList.add("hide");
-                resultArea.classList.add("hide");
                 return;
             }
+            // 读出写在标签NDEF里面的密钥
+            const tagKey = new TextDecoder().decode(record.payload).trim();
+
+            if(!KEY_WHITELIST.includes(tagKey)){
+                statusText.className = "status err";
+                statusText.innerText = "请使用官方检测芯片，这为非官方检测芯片";
+                return;
+            }
+
+            // 密钥校验通过，开始表演
             statusText.className = "status ok";
             statusText.innerText = "识别成功，正在采集空气样本";
             loadAnim.classList.remove("hide");
-            resultArea.classList.add("hide");
 
             setTimeout(()=>{
                 const hcho = (Math.random() * 0.20).toFixed(2);
                 const tvoc = (Math.random() * 0.75).toFixed(2);
                 document.getElementById("hchoOut").textContent = `${hcho} mg/m³`;
                 document.getElementById("tvocOut").textContent = `${tvoc} mg/m³`;
+
                 loadAnim.classList.add("hide");
                 statusText.innerText = "检测完成";
                 resultArea.classList.remove("hide");
