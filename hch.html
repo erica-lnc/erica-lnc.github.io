@@ -1,25 +1,25 @@
 <!DOCTYPE html>
-<html lang="zh‑CN">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF‑8">
-<meta name="viewport" content="width=device‑width, initial‑scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NFC空气质量分析仪【科普演示】</title>
 <style>
-*{margin:0;padding:0;box‑sizing:border‑box;font‑family:system‑ui,sans‑serif;}
-body{background:#0b1322;color:#fff;min‑height:100vh;padding:40px 16px;}
-.box{max‑width:400px;margin:0 auto;background:rgba(255,255,255,0.07);border‑radius:20px;padding:28px 22px;border:1px solid rgba(255,255,255,0.12);}
-.title{text‑align:center;font‑size:21px;margin‑bottom:22px;}
-.tip{background:rgba(40,120,220,0.15);padding:12px;border‑radius:10px;font‑size:14px;margin‑bottom:24px;color:#b8daff;}
-.status{text‑align:center;margin‑bottom:20px;font‑size:16px;min‑height:44px;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif;}
+body{background:#0b1322;color:#fff;min-height:100vh;padding:40px 16px;}
+.box{max-width:400px;margin:0 auto;background:rgba(255,255,255,0.07);border-radius:20px;padding:28px 22px;border:1px solid rgba(255,255,255,0.12);}
+.title{text-align:center;font-size:21px;margin-bottom:22px;}
+.tip{background:rgba(40,120,220,0.15);padding:12px;border-radius:10px;font-size:14px;margin-bottom:24px;color:#b8daff;}
+.status{text-align:center;margin-bottom:20px;font-size:16px;min-height:44px;}
 .err{color:#ff7b7b;}
 .ok{color:#7bff9e;}
-.loadingDot span{display:inline‑block;width:8px;height:8px;border‑radius:50%;background:#42a5f5;margin:0 4px;animation:dot 1.2s infinite;}
-.loadingDot span:nth‑child(2){animation‑delay:0.2s;}
-.loadingDot span:nth‑child(3){animation‑delay:0.4s;}
+.loadingDot span{display:inline-block;width:8px;height:8px;border-radius:50%;background:#42a5f5;margin:0 4px;animation:dot 1.2s infinite;}
+.loadingDot span:nth-child(2){animation-delay:0.2s;}
+.loadingDot span:nth-child(3){animation-delay:0.4s;}
 @keyframes dot{0%,100%{opacity:0.2;transform:scale(0.8);}50%{opacity:1;transform:scale(1.1);}}
-.item{display:flex;justify‑content:space‑between;padding:14px 10px;background:rgba(255,255,255,0.05);border‑radius:10px;margin‑bottom:10px;}
-.val{font‑weight:bold;font‑size:19px;color:#73ccff;}
-.info{margin‑top:18px;font‑size:12px;color:#aaa;text‑align:center;}
+.item{display:flex;justify-content:space-between;padding:14px 10px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:10px;}
+.val{font-weight:bold;font-size:19px;color:#73ccff;}
+.info{margin-top:18px;font-size:12px;color:#aaa;text-align:center;}
 .hide{display:none;}
 </style>
 </head>
@@ -39,8 +39,8 @@ body{background:#0b1322;color:#fff;min‑height:100vh;padding:40px 16px;}
 </div>
 
 <script>
-// 白名单：商家预先收集的合法NFC标签UID
-const ALLOW_UID = ["A1B2C3D4","1234567890"];
+// 真实NFC标签UID格式：带冒号大写，示例
+const ALLOW_UID = ["04:EF:89:22","AA:BB:CC:DD"];
 
 const statusText = document.getElementById("statusText");
 const loadAnim = document.getElementById("loadAnim");
@@ -48,20 +48,19 @@ const resultArea = document.getElementById("resultArea");
 
 if(!("NDEFReader" in window)){
     statusText.className = "status err";
-    statusText.innerText = "当前浏览器不支持Web‑NFC，请使用Chrome内核安卓浏览器";
+    statusText.innerText = "当前浏览器不支持Web-NFC，请使用Chrome内核安卓浏览器";
 }else{
     const ndef = new NDEFReader();
     ndef.scan().catch(err=>{
         statusText.className = "status err";
-        statusText.innerText = "NFC启动失败："+err.message;
+        statusText.innerText = "NFC启动失败：" + err.message;
     });
 
-    ndef.onreading = event=>{
-        // 获取标签UID，转大写字符串
-        const tagId = [...event.serialNumber].map(c=>c.toUpperCase()).join("");
+    ndef.onreading = event => {
+        // serialNumber原生就是 "04:EF:89:22"，直接转大写，不要拆分重组
+        const tagId = event.serialNumber.toUpperCase();
 
         if(!ALLOW_UID.includes(tagId)){
-            // 不匹配，输出商家那句提示
             statusText.className = "status err";
             statusText.innerText = "请使用官方检测芯片，这为非官方检测芯片";
             loadAnim.classList.add("hide");
@@ -69,17 +68,15 @@ if(!("NDEFReader" in window)){
             return;
         }
 
-        // ID匹配，开始表演“采样分析”
         statusText.className = "status ok";
         statusText.innerText = "识别成功，正在采集空气样本";
         loadAnim.classList.remove("hide");
         resultArea.classList.add("hide");
 
-        // 模拟检测延时
         setTimeout(()=>{
-            // 全部为随机模拟数值，完全没有读取空气！
-            const hcho = (Math.random()*0.20).toFixed(2);
-            const tvoc = (Math.random()*0.75).toFixed(2);
+            // 重点：这里依旧是随机生成，没有任何空气传感器
+            const hcho = (Math.random() * 0.20).toFixed(2);
+            const tvoc = (Math.random() * 0.75).toFixed(2);
 
             document.getElementById("hchoOut").textContent = `${hcho} mg/m³`;
             document.getElementById("tvocOut").textContent = `${tvoc} mg/m³`;
